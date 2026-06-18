@@ -11,6 +11,12 @@
 // field re-skins live across the evolved / court / precision themes. Field
 // markings are decorative, hence aria-hidden; the outer <svg> carries the
 // accessible label.
+//
+// Each renderer draws in its pitch's own viewBox pixel units (see geometry.ts
+// VIEWBOXES). Proportions are kept close to the real surfaces so each field is
+// recognisable at a glance. Lines are crisp (1-1.5px hairlines for inner marks,
+// slightly heavier for the outer boundary); a single accent2 hero line per
+// sport adds Court Vision colour without clutter.
 
 import { useId } from 'react';
 import type { PitchType } from '@/lib/types';
@@ -54,22 +60,20 @@ export default function PitchBackground({ pitch, className }: PitchBackgroundPro
       style={{ width: '100%', height: 'auto', display: 'block' }}
     >
       <defs>
-        {/* Soft vignette to lift the field off the page background. */}
-        <radialGradient id={`${uid}-turf`} cx="50%" cy="42%" r="75%">
+        {/* Soft vignette to lift the playing surface off the page background. */}
+        <radialGradient id={`${uid}-turf`} cx="50%" cy="45%" r="78%">
           <stop offset="0%" stopColor="var(--color-surface-alt)" />
           <stop offset="100%" stopColor="var(--color-surface)" />
         </radialGradient>
       </defs>
-      <g aria-hidden="true">{renderField(pitch, view.width, view.height, uid)}</g>
+      <g aria-hidden="true" strokeOpacity={FIELD_STROKE_OPACITY}>{renderField(pitch, view.width, view.height, uid)}</g>
     </svg>
   );
 }
 
 // ---------------------------------------------------------------------------
 // Field renderers. Each returns the decorative markings for one PitchType,
-// drawn in the pitch's own viewBox pixel units. Common styling: surface fill
-// for the playing area, border-colored line work, accent2 for a single hero
-// accent line per sport.
+// drawn in the pitch's own viewBox pixel units.
 // ---------------------------------------------------------------------------
 
 function renderField(pitch: PitchType, w: number, h: number, uid: string) {
@@ -88,9 +92,23 @@ function renderField(pitch: PitchType, w: number, h: number, uid: string) {
 }
 
 // Shared stroke styling tokens.
-const LINE = 'var(--color-border)';
-const LINE_STRONG = 'var(--color-muted)';
+// SURFACE / SURFACE_ALT, subtle in/out playing-area fills.
+// LINE, muted hairline for inner markings; LINE_STRONG, boundary + key lines.
+// ACCENT, single Court Vision hero colour per sport.
+const SURFACE = 'var(--color-surface)';
+const SURFACE_ALT = 'var(--color-surface-alt)';
+const LINE = 'var(--color-muted)';
+// Field markings use the bright text colour so chalk lines actually read on the
+// dark turf (muted was too faint). The whole field group is drawn at reduced
+// stroke-opacity (see FIELD_STROKE_OPACITY) so it stays crisp, not harsh.
+const LINE_STRONG = 'var(--color-text)';
 const ACCENT = 'var(--color-accent2)';
+const FIELD_STROKE_OPACITY = 0.7;
+
+// Stroke weights (viewBox units are ~1000-wide, so these read ~1.5-2 device px).
+const W_BOUNDARY = 3.4;
+const W_KEY = 2.4;
+const W_HAIR = 1.8;
 
 interface FieldProps {
   w: number;
@@ -98,51 +116,62 @@ interface FieldProps {
   uid: string;
 }
 
-// --- Baseball: diamond rotated 45°, infield, outfield arc, foul lines. -----
+// ---------------------------------------------------------------------------
+// Baseball: home plate bottom-centre, foul lines up-left/up-right at ~45°,
+// infield dirt diamond (1B right, 2B top, 3B left), pitcher's mound centre,
+// outfield grass with a smooth fence arc across the top.
+// ---------------------------------------------------------------------------
 function BaseballField({ w, h, uid }: FieldProps) {
   const homeX = w / 2;
-  const homeY = h * 0.88; // home plate near the bottom
-  const baseSpan = w * 0.3; // half-diagonal of the infield diamond
+  const homeY = h * 0.9; // home plate near the bottom
+  const baseSpan = w * 0.27; // half-diagonal of the infield diamond (home→2B = 2x)
+
   const second = { x: homeX, y: homeY - baseSpan * 2 };
   const first = { x: homeX + baseSpan, y: homeY - baseSpan };
   const third = { x: homeX - baseSpan, y: homeY - baseSpan };
-  const mound = { x: homeX, y: homeY - baseSpan * 1.15 };
+  const mound = { x: homeX, y: homeY - baseSpan * 1.0 }; // centre of the diamond
 
-  // Outfield fence arc (centered on home). Foul lines run at 45° from home.
-  const SIN45 = Math.SQRT1_2; // = √2/2
-  const fenceR = baseSpan * 2.65;
-  const foulLen = fenceR * 1.02;
-  const foulRightX = homeX + foulLen * SIN45;
-  const foulLeftX = homeX - foulLen * SIN45;
-  const foulY = homeY - foulLen * SIN45;
+  // Foul lines run at 45° up-left and up-right from home; the fence is a smooth
+  // arc centred on home, joining the two foul poles.
+  const SIN45 = Math.SQRT1_2; // √2/2
+  const fenceR = baseSpan * 3.05;
+  const foulRightX = homeX + fenceR * SIN45;
+  const foulLeftX = homeX - fenceR * SIN45;
+  const foulY = homeY - fenceR * SIN45;
 
   return (
     <g fill="none" strokeLinejoin="round" strokeLinecap="round">
-      {/* Outfield grass */}
+      {/* Fair territory: outfield grass wedge (home → foul poles → fence arc). */}
       <path
         d={`M ${homeX} ${homeY} L ${foulRightX} ${foulY} A ${fenceR} ${fenceR} 0 0 0 ${foulLeftX} ${foulY} Z`}
         fill={`url(#${uid}-turf)`}
         stroke={LINE}
-        strokeWidth={2}
+        strokeWidth={W_KEY}
       />
-      {/* Infield dirt diamond */}
+      {/* Infield dirt: square spanning the basepaths, sitting on home plate. */}
       <polygon
         points={`${homeX},${homeY} ${first.x},${first.y} ${second.x},${second.y} ${third.x},${third.y}`}
-        fill="var(--color-surface)"
+        fill={SURFACE_ALT}
         stroke={LINE_STRONG}
-        strokeWidth={2.5}
+        strokeWidth={W_KEY}
       />
-      {/* Infield arc (grass cutout) */}
+      {/* Grass infield cut-out (the curved edge behind the basepaths). */}
       <path
-        d={`M ${third.x} ${third.y} A ${baseSpan * 1.45} ${baseSpan * 1.45} 0 0 0 ${first.x} ${first.y}`}
-        stroke={LINE}
-        strokeWidth={1.5}
-        opacity={0.7}
+        d={`M ${third.x} ${third.y} A ${baseSpan * 1.5} ${baseSpan * 1.5} 0 0 0 ${first.x} ${first.y}`}
+        fill={`url(#${uid}-turf)`}
+        stroke="none"
       />
-      {/* Foul lines */}
-      <line x1={homeX} y1={homeY} x2={foulRightX} y2={foulY} stroke={LINE_STRONG} strokeWidth={2} />
-      <line x1={homeX} y1={homeY} x2={foulLeftX} y2={foulY} stroke={LINE_STRONG} strokeWidth={2} />
-      {/* Bases */}
+      {/* Basepaths (diamond outline drawn over the cut-out). */}
+      <polygon
+        points={`${homeX},${homeY} ${first.x},${first.y} ${second.x},${second.y} ${third.x},${third.y}`}
+        fill="none"
+        stroke={LINE_STRONG}
+        strokeWidth={W_KEY}
+      />
+      {/* Foul lines (the chalk lines down each line, accent hero colour). */}
+      <line x1={homeX} y1={homeY} x2={foulRightX} y2={foulY} stroke={ACCENT} strokeWidth={W_KEY} />
+      <line x1={homeX} y1={homeY} x2={foulLeftX} y2={foulY} stroke={ACCENT} strokeWidth={W_KEY} />
+      {/* Bases: 1B, 2B, 3B as small rotated squares. */}
       {[first, second, third].map((b, i) => (
         <rect
           key={i}
@@ -151,259 +180,383 @@ function BaseballField({ w, h, uid }: FieldProps) {
           width={18}
           height={18}
           transform={`rotate(45 ${b.x} ${b.y})`}
-          fill={LINE_STRONG}
+          fill={SURFACE}
+          stroke={LINE_STRONG}
+          strokeWidth={W_HAIR}
         />
       ))}
-      {/* Pitcher's mound */}
-      <circle cx={mound.x} cy={mound.y} r={14} fill="var(--color-surface-alt)" stroke={LINE_STRONG} strokeWidth={2} />
-      {/* Home plate (accent) */}
+      {/* Pitcher's mound at the centre of the diamond. */}
+      <circle cx={mound.x} cy={mound.y} r={16} fill={SURFACE} stroke={LINE_STRONG} strokeWidth={W_HAIR} />
+      <rect x={mound.x - 4} y={mound.y - 2} width={8} height={4} fill={LINE_STRONG} />
+      {/* Home plate (pentagon). */}
       <path
-        d={`M ${homeX - 11} ${homeY - 6} L ${homeX + 11} ${homeY - 6} L ${homeX + 11} ${homeY + 3} L ${homeX} ${homeY + 12} L ${homeX - 11} ${homeY + 3} Z`}
-        fill={ACCENT}
+        d={`M ${homeX - 11} ${homeY - 7} L ${homeX + 11} ${homeY - 7} L ${homeX + 11} ${homeY + 2} L ${homeX} ${homeY + 12} L ${homeX - 11} ${homeY + 2} Z`}
+        fill={LINE_STRONG}
+        stroke={LINE_STRONG}
+        strokeWidth={W_HAIR}
       />
     </g>
   );
 }
 
-// --- AFL: oval boundary, centre square, centre circle, 50m arcs. -----------
+// ---------------------------------------------------------------------------
+// AFL: a true oval filling the frame, centre square + centre circle, two 50m
+// arcs (top & bottom), and 4 goal/behind posts at each end. Attacks vertically.
+// ---------------------------------------------------------------------------
 function AflField({ w, h, uid }: FieldProps) {
   const cx = w / 2;
   const cy = h / 2;
-  const rx = w * 0.47;
-  const ry = h * 0.47;
-  const sq = w * 0.1; // half centre square
-  const circleR = w * 0.06;
+  // Leave a margin top & bottom so the goal posts (which poke OUTSIDE the goal
+  // line) render inside the viewBox instead of being clipped.
+  const rx = w * 0.46;
+  const ry = h * 0.42;
+  const sq = w * 0.1; // half the centre square (real square ≈ 50m on a ~165m ground)
+  const innerR = w * 0.055; // centre circle (outer of the two real circles)
+  const innerR2 = w * 0.03;
 
-  // 50m arcs near each end (top & bottom of the oval lengthwise).
-  const arcR = w * 0.26;
+  // 50m arcs sit a fixed distance in front of each goal line, bowing toward the
+  // centre. Drawn as a quadratic curve whose endpoints sit near the goal line.
+  const goalTopY = cy - ry;
+  const goalBottomY = cy + ry;
+  const arcHalfW = rx * 0.62; // half-width of each 50m arc's chord
+  const arcDepth = ry * 0.3; // how far the arc bows in from the goal line
+
+  // Post spacing: 4 posts (2 tall goal, 2 shorter behind) straddling the goal
+  // mouth. Posts poke OUTWARD from the goal line (behind the goal).
+  const goalGap = w * 0.05; // between the two inner goal posts
+  const behindGap = w * 0.135; // between the two outer behind posts
+  const goalPostLen = h * 0.075;
+  const behindPostLen = h * 0.055;
+
+  const posts = (yLine: number, dir: 1 | -1) => {
+    const xs = [-behindGap, -goalGap, goalGap, behindGap].map((d) => cx + d);
+    return xs.map((x, i) => {
+      const isGoal = i === 1 || i === 2;
+      const len = isGoal ? goalPostLen : behindPostLen;
+      return (
+        <line
+          key={i}
+          x1={x}
+          y1={yLine}
+          x2={x}
+          y2={yLine - dir * len}
+          stroke={isGoal ? ACCENT : LINE_STRONG}
+          strokeWidth={isGoal ? 5 : 3}
+          strokeOpacity={isGoal ? 1 : 0.9}
+          strokeLinecap="round"
+        />
+      );
+    });
+  };
+
   return (
     <g fill="none" strokeLinecap="round">
-      {/* Turf */}
-      <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill={`url(#${uid}-turf)`} stroke={LINE_STRONG} strokeWidth={3} />
-      {/* Centre square */}
-      <rect x={cx - sq} y={cy - sq} width={sq * 2} height={sq * 2} stroke={LINE} strokeWidth={2} />
-      {/* Centre circle + centre line */}
-      <circle cx={cx} cy={cy} r={circleR} stroke={LINE_STRONG} strokeWidth={2} />
-      <line x1={cx - circleR} y1={cy} x2={cx + circleR} y2={cy} stroke={LINE_STRONG} strokeWidth={2} />
-      {/* Forward (top) goal square + 50 arc */}
-      <line x1={cx - sq * 0.7} y1={cy - ry} x2={cx + sq * 0.7} y2={cy - ry + 18} stroke={ACCENT} strokeWidth={2.5} opacity={0.85} />
+      {/* Turf oval + boundary line. */}
+      <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill={`url(#${uid}-turf)`} stroke={LINE_STRONG} strokeWidth={W_BOUNDARY} />
+      {/* Centre square. */}
+      <rect x={cx - sq} y={cy - sq} width={sq * 2} height={sq * 2} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      {/* Centre circle (double) + centre line. */}
+      <circle cx={cx} cy={cy} r={innerR} stroke={LINE_STRONG} strokeWidth={W_HAIR} />
+      <circle cx={cx} cy={cy} r={innerR2} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      <line x1={cx - innerR} y1={cy} x2={cx + innerR} y2={cy} stroke={LINE_STRONG} strokeWidth={W_HAIR} />
+      {/* 50m arc, forward (top) end. Endpoints on the goal line, bowing inward. */}
       <path
-        d={`M ${cx - arcR} ${cy - ry + ry * 0.02} A ${arcR} ${arcR} 0 0 1 ${cx + arcR} ${cy - ry + ry * 0.02}`}
-        stroke={LINE}
-        strokeWidth={2}
+        d={`M ${cx - arcHalfW} ${goalTopY + ry * 0.05} Q ${cx} ${goalTopY + arcDepth} ${cx + arcHalfW} ${goalTopY + ry * 0.05}`}
+        stroke={LINE_STRONG}
+        strokeWidth={W_KEY}
       />
-      {/* Back (bottom) 50 arc */}
+      {/* 50m arc, back (bottom) end. */}
       <path
-        d={`M ${cx - arcR} ${cy + ry - ry * 0.02} A ${arcR} ${arcR} 0 0 0 ${cx + arcR} ${cy + ry - ry * 0.02}`}
-        stroke={LINE}
-        strokeWidth={2}
+        d={`M ${cx - arcHalfW} ${goalBottomY - ry * 0.05} Q ${cx} ${goalBottomY - arcDepth} ${cx + arcHalfW} ${goalBottomY - ry * 0.05}`}
+        stroke={LINE_STRONG}
+        strokeWidth={W_KEY}
       />
-      {/* Goal posts hint (top, accent) */}
-      <line x1={cx - 22} y1={cy - ry - 4} x2={cx - 22} y2={cy - ry + 22} stroke={ACCENT} strokeWidth={3} />
-      <line x1={cx + 22} y1={cy - ry - 4} x2={cx + 22} y2={cy - ry + 22} stroke={ACCENT} strokeWidth={3} />
+      {/* Goal/behind posts at both ends (top is the attacking end → accent). */}
+      {posts(goalTopY, 1)}
+      {posts(goalBottomY, -1)}
     </g>
   );
 }
 
-// --- Basketball half-court: baseline at top, key, free-throw, 3pt arc. -----
+// ---------------------------------------------------------------------------
+// Basketball half-court: baseline at the bottom with backboard + rim, painted
+// key/lane + free-throw circle (dashed back half), restricted-area arc under
+// the rim, three-point line (straight corners then arc), and the half centre-
+// circle arc at the top (the half-court line).
+// ---------------------------------------------------------------------------
 function BasketballField({ w, h, uid }: FieldProps) {
-  const left = w * 0.05;
-  const right = w * 0.95;
-  const top = h * 0.05;
-  const bottom = h * 0.97; // half-court line at the bottom
+  const left = w * 0.06;
+  const right = w * 0.94;
+  const top = h * 0.04; // half-court line near the top
+  const baseline = h * 0.94; // baseline / endline near the bottom
   const cx = w / 2;
 
-  const keyW = w * 0.32;
-  const keyTop = top;
-  const keyBottom = top + h * 0.42; // free-throw line distance
+  // The key (lane): 16ft wide, free-throw line 19ft from baseline. Scale to
+  // the drawn court (≈ 50ft x 47ft → court width = right-left, depth baseline-top).
+  const courtW = right - left;
+  const courtD = baseline - top;
+  const keyW = courtW * 0.36;
+  const ftLineY = baseline - courtD * 0.4; // free-throw line
   const ftR = keyW / 2;
 
-  // 3pt geometry: corners straight then arc.
-  const cornerInset = w * 0.06;
-  const threeStraightBottom = top + h * 0.18;
-  const threeR = w * 0.42;
-  const hoopY = top + h * 0.06;
+  // Hoop / backboard sit just inside the baseline.
+  const backboardY = baseline - courtD * 0.06;
+  const hoopY = backboardY + 14;
+  const restrictedR = courtW * 0.085;
+
+  // Three-point line: straight segments in the corners, then a top arc.
+  const cornerInset = courtW * 0.05;
+  const tpLeft = left + cornerInset;
+  const tpRight = right - cornerInset;
+  const cornerStraightY = baseline - courtD * 0.18; // where corners meet the arc
+  const tpR = courtW * 0.46;
+
+  // Half-court circle (only the lower half shows on the floor).
+  const centreR = courtW * 0.12;
 
   return (
     <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-      {/* Court floor */}
-      <rect x={left} y={top} width={right - left} height={bottom - top} fill={`url(#${uid}-turf)`} stroke={LINE_STRONG} strokeWidth={3} />
-      {/* Half-court arc + line */}
-      <line x1={left} y1={bottom} x2={right} y2={bottom} stroke={LINE_STRONG} strokeWidth={2.5} />
-      <path d={`M ${cx - w * 0.12} ${bottom} A ${w * 0.12} ${w * 0.12} 0 0 1 ${cx + w * 0.12} ${bottom}`} stroke={LINE} strokeWidth={2} />
-      {/* The key (paint) */}
-      <rect x={cx - keyW / 2} y={keyTop} width={keyW} height={keyBottom - keyTop} stroke={LINE} strokeWidth={2} fill="var(--color-surface)" opacity={0.55} />
-      {/* Free-throw circle */}
-      <path d={`M ${cx - ftR} ${keyBottom} A ${ftR} ${ftR} 0 0 0 ${cx + ftR} ${keyBottom}`} stroke={LINE} strokeWidth={2} />
-      <path d={`M ${cx - ftR} ${keyBottom} A ${ftR} ${ftR} 0 0 1 ${cx + ftR} ${keyBottom}`} stroke={LINE} strokeWidth={1.5} strokeDasharray="6 8" opacity={0.6} />
-      {/* 3-point line */}
-      <line x1={cx - threeR} y1={top} x2={cx - threeR} y2={threeStraightBottom} stroke={ACCENT} strokeWidth={2.5} />
-      <line x1={cx + threeR} y1={top} x2={cx + threeR} y2={threeStraightBottom} stroke={ACCENT} strokeWidth={2.5} />
-      <path
-        d={`M ${cx - threeR} ${threeStraightBottom} A ${threeR} ${threeR} 0 0 0 ${cx + threeR} ${threeStraightBottom}`}
-        stroke={ACCENT}
-        strokeWidth={2.5}
+      {/* Court floor. */}
+      <rect x={left} y={top} width={courtW} height={courtD} fill={`url(#${uid}-turf)`} stroke={LINE_STRONG} strokeWidth={W_BOUNDARY} />
+      {/* Half-court line (top) + half centre circle bowing down into play. */}
+      <line x1={left} y1={top} x2={right} y2={top} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      <path d={`M ${cx - centreR} ${top} A ${centreR} ${centreR} 0 0 0 ${cx + centreR} ${top}`} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      {/* Painted key / lane. */}
+      <rect
+        x={cx - keyW / 2}
+        y={ftLineY}
+        width={keyW}
+        height={baseline - ftLineY}
+        fill={SURFACE_ALT}
+        stroke={LINE_STRONG}
+        strokeWidth={W_KEY}
       />
-      {/* Backboard + hoop */}
-      <line x1={cx - 30} y1={hoopY - 14} x2={cx + 30} y2={hoopY - 14} stroke={LINE_STRONG} strokeWidth={3} />
-      <circle cx={cx} cy={hoopY} r={9} stroke={ACCENT} strokeWidth={2.5} />
-      {/* Restricted area */}
-      <path d={`M ${cx - 26} ${hoopY} A 26 26 0 0 0 ${cx + 26} ${hoopY}`} stroke={LINE} strokeWidth={1.5} opacity={0.6} />
+      {/* Free-throw circle: solid front half (toward baseline), dashed back half. */}
+      <path d={`M ${cx - ftR} ${ftLineY} A ${ftR} ${ftR} 0 0 0 ${cx + ftR} ${ftLineY}`} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      <path
+        d={`M ${cx - ftR} ${ftLineY} A ${ftR} ${ftR} 0 0 1 ${cx + ftR} ${ftLineY}`}
+        stroke={LINE_STRONG}
+        strokeWidth={W_HAIR}
+        strokeDasharray="7 8"
+      />
+      {/* Three-point line: corners straight, then the arc up top. */}
+      <line x1={tpLeft} y1={baseline} x2={tpLeft} y2={cornerStraightY} stroke={ACCENT} strokeWidth={W_KEY} />
+      <line x1={tpRight} y1={baseline} x2={tpRight} y2={cornerStraightY} stroke={ACCENT} strokeWidth={W_KEY} />
+      <path
+        d={`M ${tpLeft} ${cornerStraightY} A ${tpR} ${tpR} 0 0 1 ${tpRight} ${cornerStraightY}`}
+        stroke={ACCENT}
+        strokeWidth={W_KEY}
+      />
+      {/* Restricted-area arc under the rim. */}
+      <path
+        d={`M ${cx - restrictedR} ${hoopY} A ${restrictedR} ${restrictedR} 0 0 1 ${cx + restrictedR} ${hoopY}`}
+        stroke={LINE_STRONG}
+        strokeWidth={W_HAIR}
+      />
+      {/* Backboard + rim, just inside the baseline. */}
+      <line x1={cx - 32} y1={backboardY} x2={cx + 32} y2={backboardY} stroke={LINE_STRONG} strokeWidth={W_BOUNDARY} />
+      <line x1={cx} y1={backboardY} x2={cx} y2={hoopY - 9} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      <circle cx={cx} cy={hoopY} r={9} stroke={ACCENT} strokeWidth={W_KEY} />
     </g>
   );
 }
 
-// --- Tennis: full court lengthwise, service boxes, net, centre marks. ------
+// ---------------------------------------------------------------------------
+// Tennis: full doubles court top-down. Doubles outer lines, singles sidelines,
+// baselines top & bottom, net across the middle (dashed), service lines +
+// service boxes split by the centre service line into deuce/ad, centre marks.
+// ---------------------------------------------------------------------------
 function TennisField({ w, h, uid }: FieldProps) {
-  const left = w * 0.08;
-  const right = w * 0.92;
+  // Real doubles court is 36ft x 78ft (1 : 2.17). Derive the court height from
+  // the available frame height (with margin) and the width from the true 36:78
+  // ratio, so the court always fits inside the viewBox and stays in proportion.
   const top = h * 0.05;
   const bottom = h * 0.95;
+  const courtH = bottom - top;
+  const courtW = courtH * (36 / 78); // keep true 36:78 proportion
+  const left = (w - courtW) / 2;
+  const right = left + courtW;
   const cx = (left + right) / 2;
-  const cy = (top + bottom) / 2;
+  const cy = (top + bottom) / 2; // the net
 
-  // Doubles alley insets → singles sidelines.
-  const alley = (right - left) * 0.11;
+  // Doubles alleys: singles court is 27ft of the 36ft width → alley = 4.5ft each.
+  const alley = courtW * (4.5 / 36);
   const sglLeft = left + alley;
   const sglRight = right - alley;
 
-  // Service lines: a fraction of half-court from the net.
-  const halfLen = (bottom - top) / 2;
-  const svcTop = cy - halfLen * 0.46;
-  const svcBottom = cy + halfLen * 0.46;
+  // Service line is 21ft from the net (net→baseline = 39ft).
+  const svcOffset = (courtH / 2) * (21 / 39);
+  const svcTop = cy - svcOffset;
+  const svcBottom = cy + svcOffset;
+
+  const mark = courtH * 0.018; // centre mark stub length
 
   return (
     <g fill="none" strokeLinecap="square">
-      {/* Court surface */}
-      <rect x={left} y={top} width={right - left} height={bottom - top} fill={`url(#${uid}-turf)`} stroke={LINE_STRONG} strokeWidth={3} />
-      {/* Singles sidelines */}
-      <line x1={sglLeft} y1={top} x2={sglLeft} y2={bottom} stroke={LINE} strokeWidth={2} />
-      <line x1={sglRight} y1={top} x2={sglRight} y2={bottom} stroke={LINE} strokeWidth={2} />
-      {/* Service lines (between singles sidelines) */}
-      <line x1={sglLeft} y1={svcTop} x2={sglRight} y2={svcTop} stroke={LINE} strokeWidth={2} />
-      <line x1={sglLeft} y1={svcBottom} x2={sglRight} y2={svcBottom} stroke={LINE} strokeWidth={2} />
-      {/* Centre service line */}
-      <line x1={cx} y1={svcTop} x2={cx} y2={svcBottom} stroke={LINE} strokeWidth={2} />
-      {/* Centre marks on baselines */}
-      <line x1={cx} y1={top} x2={cx} y2={top + 16} stroke={LINE} strokeWidth={2} />
-      <line x1={cx} y1={bottom - 16} x2={cx} y2={bottom} stroke={LINE} strokeWidth={2} />
-      {/* Net (accent) */}
-      <line x1={left - 10} y1={cy} x2={right + 10} y2={cy} stroke={ACCENT} strokeWidth={3} />
-      <line x1={left - 10} y1={cy} x2={right + 10} y2={cy} stroke={LINE_STRONG} strokeWidth={1} strokeDasharray="2 5" />
+      {/* Court surface + doubles boundary. */}
+      <rect x={left} y={top} width={courtW} height={courtH} fill={`url(#${uid}-turf)`} stroke={LINE_STRONG} strokeWidth={W_BOUNDARY} />
+      {/* Singles sidelines. */}
+      <line x1={sglLeft} y1={top} x2={sglLeft} y2={bottom} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      <line x1={sglRight} y1={top} x2={sglRight} y2={bottom} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      {/* Service lines (run only between the singles sidelines). */}
+      <line x1={sglLeft} y1={svcTop} x2={sglRight} y2={svcTop} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      <line x1={sglLeft} y1={svcBottom} x2={sglRight} y2={svcBottom} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      {/* Centre service line: splits each half into deuce / ad boxes. */}
+      <line x1={cx} y1={svcTop} x2={cx} y2={svcBottom} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      {/* Centre marks on each baseline. */}
+      <line x1={cx} y1={top} x2={cx} y2={top + mark} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      <line x1={cx} y1={bottom - mark} x2={cx} y2={bottom} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      {/* Net across the middle (hero accent, dashed) + posts overhanging. */}
+      <line x1={left - w * 0.04} y1={cy} x2={right + w * 0.04} y2={cy} stroke={ACCENT} strokeWidth={W_KEY} strokeDasharray="9 6" />
+      <line x1={left - w * 0.04} y1={cy - 6} x2={left - w * 0.04} y2={cy + 6} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      <line x1={right + w * 0.04} y1={cy - 6} x2={right + w * 0.04} y2={cy + 6} stroke={LINE_STRONG} strokeWidth={W_KEY} />
     </g>
   );
 }
 
-// --- Soccer: pitch, halfway line, centre circle, penalty + goal areas. -----
+// ---------------------------------------------------------------------------
+// Soccer: full pitch top-down, attacking vertically. Touchlines + goal lines,
+// halfway line, centre circle + spot, both penalty boxes + 6-yard goal areas +
+// penalty spots + penalty arcs (the D), corner arcs, and goals at both ends.
+// ---------------------------------------------------------------------------
 function SoccerField({ w, h, uid }: FieldProps) {
-  const left = w * 0.04;
-  const right = w * 0.96;
-  const top = h * 0.06;
-  const bottom = h * 0.94;
+  const left = w * 0.07;
+  const right = w * 0.93;
+  const top = h * 0.04;
+  const bottom = h * 0.96;
   const cx = (left + right) / 2;
   const cy = (top + bottom) / 2;
-  const fieldH = bottom - top;
-  const circleR = w * 0.09;
+  const pitchW = right - left;
+  const pitchH = bottom - top;
+  const centreR = pitchW * 0.16;
 
-  // Penalty box: spans ~40% of pitch width, ~16% of length.
-  const penH = (right - left) * 0.4;
-  const penD = (right - left) * 0.16;
-  const goalH = (right - left) * 0.18;
-  const goalD = (right - left) * 0.06;
-
-  const penArc = (right - left) * 0.1;
+  // Penalty area: 44yd wide x 18yd deep on a 68m x 105m pitch.
+  const penW = pitchW * 0.58;
+  const penD = pitchH * 0.16;
+  // Goal area (6-yard box): 20yd wide x 6yd deep.
+  const goalAreaW = pitchW * 0.28;
+  const goalAreaD = pitchH * 0.06;
+  // Penalty spot 12yd from goal; arc radius 10yd centred on the spot.
+  const spotOffset = pitchH * 0.105;
+  const penArcR = pitchW * 0.13;
+  // Goal mouth + net depth poking outside the goal line.
+  const goalW = pitchW * 0.16;
+  const goalDepth = pitchH * 0.02;
+  const cornerR = pitchW * 0.035;
 
   return (
     <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-      {/* Turf */}
-      <rect x={left} y={top} width={right - left} height={fieldH} fill={`url(#${uid}-turf)`} stroke={LINE_STRONG} strokeWidth={3} />
-      {/* Halfway line + centre circle + spot */}
-      <line x1={left} y1={cy} x2={right} y2={cy} stroke={LINE} strokeWidth={2} />
-      <circle cx={cx} cy={cy} r={circleR} stroke={LINE} strokeWidth={2} />
+      {/* Turf + touchlines / goal lines. */}
+      <rect x={left} y={top} width={pitchW} height={pitchH} fill={`url(#${uid}-turf)`} stroke={LINE_STRONG} strokeWidth={W_BOUNDARY} />
+      {/* Halfway line, centre circle + spot. */}
+      <line x1={left} y1={cy} x2={right} y2={cy} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      <circle cx={cx} cy={cy} r={centreR} stroke={LINE_STRONG} strokeWidth={W_KEY} />
       <circle cx={cx} cy={cy} r={3} fill={LINE_STRONG} />
-      {/* Left goal (attacking), accent penalty arc */}
-      <PenaltyEnd
-        side="left"
+      {/* Corner arcs (all four corners). */}
+      <path d={`M ${left + cornerR} ${top} A ${cornerR} ${cornerR} 0 0 0 ${left} ${top + cornerR}`} stroke={LINE_STRONG} strokeWidth={W_HAIR} />
+      <path d={`M ${right - cornerR} ${top} A ${cornerR} ${cornerR} 0 0 1 ${right} ${top + cornerR}`} stroke={LINE_STRONG} strokeWidth={W_HAIR} />
+      <path d={`M ${left} ${bottom - cornerR} A ${cornerR} ${cornerR} 0 0 0 ${left + cornerR} ${bottom}`} stroke={LINE_STRONG} strokeWidth={W_HAIR} />
+      <path d={`M ${right} ${bottom - cornerR} A ${cornerR} ${cornerR} 0 0 1 ${right - cornerR} ${bottom}`} stroke={LINE_STRONG} strokeWidth={W_HAIR} />
+      {/* Top goal end (attacking end → accent goal). */}
+      <GoalEnd
         cx={cx}
-        edge={left}
-        cy={cy}
-        penH={penH}
+        line={top}
+        dir={1}
+        penW={penW}
         penD={penD}
-        goalH={goalH}
-        goalD={goalD}
-        penArc={penArc}
+        goalAreaW={goalAreaW}
+        goalAreaD={goalAreaD}
+        spotOffset={spotOffset}
+        penArcR={penArcR}
+        goalW={goalW}
+        goalDepth={goalDepth}
         accent
       />
-      {/* Right goal */}
-      <PenaltyEnd
-        side="right"
+      {/* Bottom goal end. */}
+      <GoalEnd
         cx={cx}
-        edge={right}
-        cy={cy}
-        penH={penH}
+        line={bottom}
+        dir={-1}
+        penW={penW}
         penD={penD}
-        goalH={goalH}
-        goalD={goalD}
-        penArc={penArc}
+        goalAreaW={goalAreaW}
+        goalAreaD={goalAreaD}
+        spotOffset={spotOffset}
+        penArcR={penArcR}
+        goalW={goalW}
+        goalDepth={goalDepth}
       />
     </g>
   );
 }
 
-// A soccer goal-end cluster (penalty box, goal box, penalty spot + arc).
-// `side` controls whether boxes extend right (left end) or left (right end).
-function PenaltyEnd({
-  side,
-  edge,
-  cy,
-  penH,
+// A soccer goal-end cluster (penalty area, 6-yard box, penalty spot + arc/D,
+// and the goal frame). `dir` = +1 for the top end (boxes extend downward into
+// the pitch), -1 for the bottom end (boxes extend upward).
+function GoalEnd({
+  cx,
+  line,
+  dir,
+  penW,
   penD,
-  goalH,
-  goalD,
-  penArc,
+  goalAreaW,
+  goalAreaD,
+  spotOffset,
+  penArcR,
+  goalW,
+  goalDepth,
   accent = false,
 }: {
-  side: 'left' | 'right';
   cx: number;
-  edge: number;
-  cy: number;
-  penH: number;
+  line: number;
+  dir: 1 | -1;
+  penW: number;
   penD: number;
-  goalH: number;
-  goalD: number;
-  penArc: number;
+  goalAreaW: number;
+  goalAreaD: number;
+  spotOffset: number;
+  penArcR: number;
+  goalW: number;
+  goalDepth: number;
   accent?: boolean;
 }) {
-  const dir = side === 'left' ? 1 : -1;
-  const penX = side === 'left' ? edge : edge - penD;
-  const goalX = side === 'left' ? edge : edge - goalD;
-  const spotX = edge + dir * penD * 0.66;
-  const arcColor = accent ? ACCENT : LINE;
+  // Box rects are drawn from the goal line inward by `dir`.
+  const penY = dir === 1 ? line : line - penD;
+  const gaY = dir === 1 ? line : line - goalAreaD;
+  const spotY = line + dir * spotOffset;
+  const penEdge = line + dir * penD; // inner edge of the penalty area
+  const goalFrame = accent ? ACCENT : LINE_STRONG;
+
+  // Penalty arc (the D): only the part outside the penalty box is visible.
+  // Centred on the penalty spot, joining the box edge symmetrically.
+  const dx = penArcR * 0.78;
+  const arcLeftX = cx - dx;
+  const arcRightX = cx + dx;
+  const sweep = dir === 1 ? 1 : 0;
 
   return (
     <g>
-      <rect x={penX} y={cy - penH / 2} width={penD} height={penH} stroke={LINE} strokeWidth={2} />
-      <rect x={goalX} y={cy - goalH / 2} width={goalD} height={goalH} stroke={LINE} strokeWidth={2} />
-      <circle cx={spotX} cy={cy} r={2.5} fill={LINE_STRONG} />
-      {/* Penalty arc, only the portion outside the box shows. */}
+      {/* Penalty area. */}
+      <rect x={cx - penW / 2} y={penY} width={penW} height={penD} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      {/* 6-yard goal area. */}
+      <rect x={cx - goalAreaW / 2} y={gaY} width={goalAreaW} height={goalAreaD} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      {/* Penalty spot. */}
+      <circle cx={cx} cy={spotY} r={2.5} fill={LINE_STRONG} />
+      {/* Penalty arc / D, bows away from the goal, outside the box. */}
       <path
-        d={
-          side === 'left'
-            ? `M ${edge + penD} ${cy - penArc * 0.7} A ${penArc} ${penArc} 0 0 1 ${edge + penD} ${cy + penArc * 0.7}`
-            : `M ${edge - penD} ${cy - penArc * 0.7} A ${penArc} ${penArc} 0 0 0 ${edge - penD} ${cy + penArc * 0.7}`
-        }
-        stroke={arcColor}
-        strokeWidth={2}
-        opacity={accent ? 0.85 : 1}
-      />
-      {/* Goal frame accent */}
-      <line
-        x1={edge}
-        y1={cy - goalH / 2}
-        x2={edge}
-        y2={cy + goalH / 2}
+        d={`M ${arcLeftX} ${penEdge} A ${penArcR} ${penArcR} 0 0 ${sweep} ${arcRightX} ${penEdge}`}
         stroke={accent ? ACCENT : LINE_STRONG}
-        strokeWidth={accent ? 3 : 2}
+        strokeWidth={W_KEY}
+      />
+      {/* Goal frame poking outside the goal line. */}
+      <rect
+        x={cx - goalW / 2}
+        y={dir === 1 ? line - goalDepth : line}
+        width={goalW}
+        height={goalDepth}
+        fill={SURFACE_ALT}
+        stroke={goalFrame}
+        strokeWidth={accent ? W_BOUNDARY : W_KEY}
       />
     </g>
   );

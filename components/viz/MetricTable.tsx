@@ -109,17 +109,26 @@ export function MetricTable({ rows, title }: MetricTableProps) {
       aria-label={title ?? 'Advanced metrics'}
     >
       {title ? (
-        <header className="flex items-center justify-between border-b border-border px-4 py-3 sm:px-5">
-          <h3 className="font-display text-sm font-semibold uppercase tracking-[0.14em] text-text">
+        <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
+          <h3 className="min-w-0 truncate font-display text-sm font-semibold uppercase tracking-[0.14em] text-text">
             {title}
           </h3>
-          <span className="font-mono text-[0.65rem] uppercase tracking-widest text-muted">
+          <span className="shrink-0 font-mono text-[0.65rem] uppercase tracking-widest text-muted">
             {rows.length} metrics
           </span>
         </header>
       ) : null}
 
-      <table className="w-full border-collapse text-left">
+      {/* fixed table layout + full width keeps columns from being pushed wider
+          than the container by long values; per-column widths below allocate a
+          generous, capped share to the Value column so numbers never clip. */}
+      <table className="w-full table-fixed border-collapse text-left">
+        <colgroup>
+          <col />
+          <col className="w-[34%] sm:w-[26%]" />
+          <col className="hidden w-[16%] sm:table-column" />
+          <col className="hidden w-[22%] md:table-column" />
+        </colgroup>
         <caption className="sr-only">{title ?? 'Advanced metrics table'}</caption>
         <thead>
           <tr className="border-b border-border">
@@ -161,9 +170,9 @@ export function MetricTable({ rows, title }: MetricTableProps) {
                 {/* Label + optional progress bar */}
                 <th
                   scope="row"
-                  className="px-4 py-3 align-middle font-body text-sm font-medium text-text sm:px-5"
+                  className="min-w-0 px-4 py-3 align-middle font-body text-sm font-medium text-text sm:px-5"
                 >
-                  <span className="block">{row.label}</span>
+                  <span className="block break-words">{row.label}</span>
                   {showProgress ? (
                     <span className="mt-2 block max-w-[12rem]">
                       <ProgressBar value={value!} max={row.max!} label={row.label} />
@@ -171,14 +180,21 @@ export function MetricTable({ rows, title }: MetricTableProps) {
                   ) : null}
                 </th>
 
-                {/* Value + unit */}
-                <td className="whitespace-nowrap px-3 py-3 text-right align-middle">
-                  <span className="font-mono text-base font-semibold tabular-nums text-text">
-                    {row.value}
+                {/* Value + unit. No whitespace-nowrap (that forced overflow);
+                    the value group wraps its unit when the column is tight and
+                    the numeral scales via clamp(). tabular-nums aligns digits. */}
+                <td className="px-3 py-3 text-right align-middle">
+                  <span className="inline-flex max-w-full flex-wrap items-baseline justify-end gap-x-1">
+                    <span
+                      className="break-words font-mono font-semibold tabular-nums text-text"
+                      style={{ fontSize: 'clamp(0.85rem, 0.6rem + 0.9vw, 1rem)' }}
+                    >
+                      {row.value}
+                    </span>
+                    {row.unit ? (
+                      <span className="font-mono text-[0.7rem] text-muted">{row.unit}</span>
+                    ) : null}
                   </span>
-                  {row.unit ? (
-                    <span className="ml-1 font-mono text-[0.7rem] text-muted">{row.unit}</span>
-                  ) : null}
                   {/* Delta inline on small screens (hidden Δ column) */}
                   {row.delta != null ? (
                     <span className="mt-0.5 block sm:hidden">
@@ -188,14 +204,14 @@ export function MetricTable({ rows, title }: MetricTableProps) {
                 </td>
 
                 {/* Delta column (>= sm) */}
-                <td className="hidden whitespace-nowrap px-3 py-3 text-right align-middle sm:table-cell">
+                <td className="hidden px-3 py-3 text-right align-middle sm:table-cell">
                   {row.delta != null ? <DeltaBadge delta={row.delta} /> : (
                     <span className="font-mono text-xs text-muted">-</span>
                   )}
                 </td>
 
                 {/* Sparkbar column (>= md) */}
-                <td className="hidden px-3 py-3 align-middle md:table-cell">
+                <td className="hidden overflow-hidden px-3 py-3 align-middle md:table-cell">
                   {row.spark && row.spark.length > 0 ? (
                     <SparkBar data={row.spark} label={row.label} />
                   ) : (

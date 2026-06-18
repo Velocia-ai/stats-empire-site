@@ -41,6 +41,8 @@ export interface ZonePolygon {
 
 export interface TrajectoryPath {
   id: string;
+  /** Optional human-readable name for the play (e.g. "Key pass -> assist"). */
+  label?: string;
   points: [number, number][];
   outcome?: Outcome;
   intensity?: number;

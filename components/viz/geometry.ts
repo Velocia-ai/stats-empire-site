@@ -28,16 +28,16 @@ export interface ViewBox {
  * stroke math); the SVG scales responsively via `viewBox` + 100% width.
  */
 const VIEWBOXES: Record<PitchType, ViewBox> = {
-  // Baseball: square-ish frame, diamond rotated 45° inside it.
+  // Baseball: square frame, home plate bottom-centre, diamond + outfield fanning up.
   'baseball-diamond': { width: 1000, height: 1000 },
-  // AFL: oval, wider than tall (~165m x 135m → ~1.22:1).
-  'afl-oval': { width: 1000, height: 820 },
-  // Basketball half-court: 50ft wide x 47ft deep → ~1.06:1, baseline at top.
+  // AFL: oval, wider than tall (~165m x 135m → ~1.22:1) plus a little margin.
+  'afl-oval': { width: 1000, height: 760 },
+  // Basketball half-court: 50ft wide x 47ft deep → ~1.06:1, baseline at the bottom.
   'basketball-halfcourt': { width: 1000, height: 940 },
-  // Tennis: full singles/doubles court seen lengthwise, taller than wide.
-  'tennis-court': { width: 720, height: 1000 },
-  // Soccer: full pitch, landscape (~105m x 68m → ~1.55:1).
-  'soccer-pitch': { width: 1000, height: 645 },
+  // Tennis: full doubles court seen lengthwise (78ft x 36ft → 2.17:1) with margin.
+  'tennis-court': { width: 540, height: 1000 },
+  // Soccer: full pitch, attacking vertically (~105m x 68m → ~1.54:1 → portrait here).
+  'soccer-pitch': { width: 680, height: 1000 },
 };
 
 /** Returns the viewBox dimensions for a pitch. */

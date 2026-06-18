@@ -41,31 +41,46 @@ function DeltaChip({ delta }: { delta: number }) {
 export function StatTiles({ rows }: StatTilesProps) {
   return (
     <ul
-      className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+      // Responsive auto-fit grid: tiles flow into as many columns as fit the
+      // container (min ~9.5rem each) and wrap onto new rows instead of
+      // overflowing a fixed-width track. No fixed col count, so it adapts to
+      // any bento column width without clipping.
+      className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr))]"
       aria-label="Headline statistics"
     >
       {rows.map((row, idx) => (
         <li
           key={`${row.label}-${idx}`}
           className={clsx(
-            'group relative overflow-hidden rounded-2xl border border-border bg-surface p-4 sm:p-5',
+            // min-w-0 lets the tile shrink below its content's intrinsic width
+            // so long numbers can scale down rather than force overflow. Note:
+            // NO overflow-hidden here, that was clipping the digits.
+            'group relative flex min-w-0 flex-col rounded-2xl border border-border bg-surface p-4 sm:p-5',
             'transition-colors hover:border-accent1/40',
           )}
         >
-          {/* faint accent wash on hover */}
+          {/* faint accent wash on hover (clipped to the rounded card) */}
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent1/0 to-accent1/0 transition-colors group-hover:from-accent1/[0.06]"
-          />
+            className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl"
+          >
+            <span className="absolute inset-0 bg-gradient-to-br from-accent1/0 to-accent1/0 transition-colors group-hover:from-accent1/[0.06]" />
+          </span>
 
-          <div className="relative flex h-full flex-col justify-between gap-3">
-            <p className="font-mono text-[0.65rem] font-medium uppercase tracking-[0.16em] text-muted">
+          <div className="relative flex h-full min-w-0 flex-col justify-between gap-3">
+            <p className="min-w-0 truncate font-mono text-[0.65rem] font-medium uppercase tracking-[0.16em] text-muted">
               {row.label}
             </p>
 
-            <div className="flex items-end justify-between gap-2">
-              <p className="flex items-baseline gap-1 font-display leading-none">
-                <span className="text-3xl font-bold tabular-nums text-text sm:text-4xl">
+            <div className="flex min-w-0 flex-wrap items-end justify-between gap-x-2 gap-y-1">
+              {/* Value + unit: min-w-0 + flex-wrap so a long value can wrap its
+                  unit to a new line; clamp() font scales the numeral down on
+                  narrow tiles. tabular-nums keeps digits aligned. */}
+              <p className="flex min-w-0 flex-wrap items-baseline gap-x-1 font-display leading-none">
+                <span
+                  className="min-w-0 break-words font-bold tabular-nums text-text"
+                  style={{ fontSize: 'clamp(1.5rem, 1rem + 2.4vw, 2.25rem)' }}
+                >
                   {row.value}
                 </span>
                 {row.unit ? (

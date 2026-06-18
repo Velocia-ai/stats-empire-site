@@ -5,7 +5,14 @@
 // -----------------------------------------------------------------------------
 // This is the single, explicit Recharts integration for Stats Empire. All other
 // viz primitives are hand-rolled SVG; trend/momentum charts go through Recharts
-// (ResponsiveContainer + AreaChart) here.
+// (ResponsiveContainer + ComposedChart) here.
+//
+// GOAL: the chart must be SELF-EXPLANATORY. A reader who has never seen the data
+// should be able to tell, at a glance, WHAT is measured, OVER WHAT (the match
+// axis), in WHAT UNITS, WHICH line is which, and WHERE it ended up. So the shell
+// renders an explicit title + one-line subtitle, the axes are labelled with
+// units, every series has a swatch in a visible legend, gridlines anchor the
+// values, and the latest value of each series is pinned with a label dot.
 //
 // Theming: Recharts renders raw SVG that does NOT pick up Tailwind utility
 // classes for stroke/fill the way DOM elements do, so we resolve the theme's
@@ -13,14 +20,19 @@
 // at runtime and feed those concrete color strings into the chart. A small
 // effect re-reads them whenever the active [data-theme] changes, keeping the
 // chart in lockstep with the A/B/C switch. Per-series `TrendSeries.color`
-// overrides the theme accent when provided.
+// overrides the theme accent when provided, and if that override is itself a
+// `var(--color-*)` token, we resolve it to a concrete color too (raw SVG
+// attributes can't consume `var()` reliably).
 // =============================================================================
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import {
   Area,
-  AreaChart,
   CartesianGrid,
+  ComposedChart,
+  Label,
+  LabelList,
+  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -40,6 +52,7 @@ interface ThemeColors {
   muted: string;
   border: string;
   surface: string;
+  surfaceAlt: string;
   text: string;
 }
 
@@ -49,6 +62,7 @@ const FALLBACK: ThemeColors = {
   muted: '#9aa7bd',
   border: '#2a3548',
   surface: '#121826',
+  surfaceAlt: '#1a2233',
   text: '#f4f7fb',
 };
 
@@ -70,6 +84,7 @@ function useThemeColors(): ThemeColors {
         muted: readVar('--color-muted', FALLBACK.muted),
         border: readVar('--color-border', FALLBACK.border),
         surface: readVar('--color-surface', FALLBACK.surface),
+        surfaceAlt: readVar('--color-surface-alt', FALLBACK.surfaceAlt),
         text: readVar('--color-text', FALLBACK.text),
       });
 
@@ -87,16 +102,73 @@ function useThemeColors(): ThemeColors {
   return colors;
 }
 
-/** Cycle through the two theme accents for series without an explicit color. */
+/**
+ * Resolve a series' display color to a concrete value usable in raw SVG.
+ * - explicit hex/rgb → used as-is
+ * - `var(--color-token)` → resolved live against the active theme
+ * - missing → cycles the two theme accents
+ */
 function seriesColor(series: TrendSeries, index: number, theme: ThemeColors): string {
-  if (series.color) return series.color;
-  return index % 2 === 0 ? theme.accent1 : theme.accent2;
+  const fallback = index % 2 === 0 ? theme.accent1 : theme.accent2;
+  const raw = series.color?.trim();
+  if (!raw) return fallback;
+  const varMatch = raw.match(/^var\(\s*(--[\w-]+)\s*\)$/);
+  if (varMatch) return readVar(varMatch[1], fallback);
+  return raw;
+}
+
+/**
+ * Derive a compact unit for a series from EXPLICIT signals in its name only, 
+ * never guessed from loose substrings (that mislabels e.g. "Win/UE diff" as a
+ * percentage). Two reliable signals:
+ *   - a literal "%" anywhere in the name  → "%"
+ *   - a trailing parenthetical unit, e.g. "Exit Velo (mph)" → "mph"
+ * Anything else is a bare count → "".
+ */
+function unitFor(name: string): string {
+  if (name.includes('%')) return '%';
+  const paren = name.match(/\(([^)]{1,6})\)\s*$/);
+  if (paren) {
+    const u = paren[1].trim();
+    // Only accept things that look like units, not descriptive words.
+    if (/^(mph|km\/h|°|deg|ft|m|m\/s|s|kg|lb)$/i.test(u)) return u === 'deg' ? '°' : u;
+  }
+  return '';
+}
+
+/**
+ * The axis title should name the series WITHOUT re-printing a unit the name
+ * already carries (avoids "1st-Serve % (%)" and "Exit Velo (mph) (mph)").
+ */
+function axisTitle(name: string, unit: string): string {
+  if (!unit) return name;
+  // Strip a trailing parenthetical unit and a trailing literal "%".
+  const base = name
+    .replace(/\s*\([^)]*\)\s*$/, '')
+    .replace(/\s*%\s*$/, '')
+    .trim();
+  return `${base} (${unit})`;
+}
+
+/** Format a numeric value with up to one decimal, trimming trailing ".0". */
+function fmt(v: number): string {
+  if (!Number.isFinite(v)) return '-';
+  const r = Math.round(v * 10) / 10;
+  return Number.isInteger(r) ? String(r) : r.toFixed(1);
+}
+
+/** Format value + unit for axis/tooltip, with a thin space before "%". */
+function fmtUnit(v: number, unit: string): string {
+  const num = fmt(v);
+  if (!unit) return num;
+  return unit === '%' || unit === '°' ? `${num}${unit}` : `${num} ${unit}`;
 }
 
 interface TooltipPayloadEntry {
   name?: string | number;
   value?: number | string;
   color?: string;
+  dataKey?: string | number;
 }
 
 function ChartTooltip({
@@ -104,148 +176,420 @@ function ChartTooltip({
   payload,
   label,
   theme,
+  units,
+  xCaption,
 }: {
   active?: boolean;
   payload?: TooltipPayloadEntry[];
   label?: string | number;
   theme: ThemeColors;
+  units: Record<string, string>;
+  xCaption: string;
 }) {
   if (!active || !payload || payload.length === 0) return null;
   return (
     <div
-      className="rounded-lg border border-border bg-surface px-3 py-2 shadow-lg"
+      className="rounded-lg border px-3 py-2 shadow-lg"
       style={{ borderColor: theme.border, backgroundColor: theme.surface }}
     >
       <p className="mb-1 font-mono text-[0.65rem] uppercase tracking-widest text-muted">
-        {label}
+        {xCaption} {label}
       </p>
       <ul className="space-y-0.5">
-        {payload.map((entry, i) => (
-          <li key={i} className="flex items-center gap-2 font-mono text-xs tabular-nums text-text">
-            <span
-              aria-hidden="true"
-              className="inline-block h-2 w-2 rounded-full"
-              style={{ backgroundColor: entry.color }}
-            />
-            <span className="text-muted">{entry.name}</span>
-            <span className="ml-auto font-semibold">{entry.value}</span>
-          </li>
-        ))}
+        {payload.map((entry, i) => {
+          const key = String(entry.name ?? entry.dataKey ?? '');
+          const num = typeof entry.value === 'number' ? entry.value : Number(entry.value);
+          return (
+            <li
+              key={i}
+              className="flex items-center gap-2 font-mono text-xs tabular-nums text-text"
+            >
+              <span
+                aria-hidden="true"
+                className="inline-block h-2 w-2 rounded-full"
+                style={{ backgroundColor: entry.color }}
+              />
+              <span className="text-muted">{key}</span>
+              <span className="ml-auto font-semibold">
+                {Number.isFinite(num) ? fmtUnit(num, units[key] ?? '') : String(entry.value)}
+              </span>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
+}
+
+/**
+ * Split the incoming `label` into a strong title and a softer subtitle.
+ * Fixtures use forms like "Points & True Shooting %, last 6 games", we keep
+ * the metric part as the title and surface the descriptor as the subtitle.
+ */
+function splitLabel(label: string): { title: string; subtitle: string } {
+  const idx = label.indexOf(',');
+  if (idx > 0 && idx < label.length - 1) {
+    return { title: label.slice(0, idx).trim(), subtitle: label.slice(idx + 1).trim() };
+  }
+  return { title: label.trim(), subtitle: '' };
 }
 
 export function TrendChart({ label, xLabels, series }: TrendChartProps) {
   const theme = useThemeColors();
   const gradientPrefix = useId().replace(/[:]/g, '');
 
-  // Pivot TrendSeries[] (column-oriented) into Recharts row records keyed by x.
-  const data = xLabels.map((x, i) => {
-    const row: Record<string, number | string> = { x };
+  const { title, subtitle } = useMemo(() => splitLabel(label), [label]);
+
+  // Per-series inferred units + resolved colors.
+  const units = useMemo(() => {
+    const u: Record<string, string> = {};
     series.forEach((s) => {
-      row[s.name] = s.data[i];
+      u[s.name] = unitFor(s.name);
     });
-    return row;
-  });
+    return u;
+  }, [series]);
+
+  const colors = useMemo(
+    () => series.map((s, i) => seriesColor(s, i, theme)),
+    [series, theme],
+  );
+
+  // Pivot TrendSeries[] (column-oriented) into Recharts row records keyed by x.
+  const data = useMemo(
+    () =>
+      xLabels.map((x, i) => {
+        const row: Record<string, number | string> = { x };
+        series.forEach((s) => {
+          row[s.name] = s.data[i];
+        });
+        return row;
+      }),
+    [xLabels, series],
+  );
+
+  // Decide whether the two series belong on SEPARATE Y axes. Unit names are too
+  // unreliable to drive this (a count and a % can share "", and "Win/UE diff"
+  // has no unit at all), so we compare their VALUE RANGES: if the series live on
+  // very different scales (their ranges barely overlap, or their magnitudes
+  // differ by a large factor) a single shared axis would flatten one of them, so
+  // each gets its own native scale. Matching scales share the left axis.
+  const useDualAxis = useMemo(() => {
+    if (series.length !== 2) return false;
+    const stats = series.map((s) => {
+      const vals = s.data.filter((v) => Number.isFinite(v));
+      if (vals.length === 0) return null;
+      const min = Math.min(...vals);
+      const max = Math.max(...vals);
+      return { min, max, mid: (min + max) / 2 };
+    });
+    if (!stats[0] || !stats[1]) return false;
+    const [a, b] = stats;
+    // Ranges don't overlap at all → clearly different scales.
+    const disjoint = a.max < b.min || b.max < a.min;
+    // Magnitudes differ by a large factor (guards divide-by-~0).
+    const mids = [Math.abs(a.mid), Math.abs(b.mid)].sort((x, y) => x - y);
+    const ratio = mids[0] < 1e-6 ? Infinity : mids[1] / mids[0];
+    return disjoint || ratio >= 2.5;
+  }, [series]);
+
+  const leftUnit = series[0] ? (units[series[0].name] ?? '') : '';
+  const rightUnit = useDualAxis && series[1] ? (units[series[1].name] ?? '') : '';
+  // When series share one axis but also share a unit, label the axis with it.
+  const sharedUnit = useMemo(() => {
+    if (useDualAxis) return leftUnit;
+    const us = Array.from(new Set(series.map((s) => units[s.name] ?? '')));
+    return us.length === 1 ? us[0] : leftUnit;
+  }, [useDualAxis, leftUnit, series, units]);
+
+  // Last (latest) value per series → drives the "where it ended" pin label.
+  const lastValues = useMemo(
+    () =>
+      series.map((s) => {
+        const v = s.data[s.data.length - 1];
+        return Number.isFinite(v) ? v : undefined;
+      }),
+    [series],
+  );
+
+  const xCaption = 'Match';
+
+  // Axis titles. Dual-axis → each axis names its own series; shared axis →
+  // the common unit (or a neutral "Value" when units differ).
+  const leftAxisTitle = useDualAxis
+    ? axisTitle(series[0]?.name ?? 'Value', leftUnit)
+    : sharedUnit
+      ? `Value (${sharedUnit})`
+      : 'Value';
+  const rightAxisTitle = axisTitle(series[1]?.name ?? 'Value', rightUnit);
+
+  const tick = { fill: theme.muted, fontSize: 11, fontFamily: 'var(--font-mono)' } as const;
+  const axisLabelStyle = {
+    fill: theme.muted,
+    fontSize: 10,
+    fontFamily: 'var(--font-mono)',
+    letterSpacing: '0.08em',
+  } as const;
 
   return (
     <section
       className="rounded-2xl border border-border bg-surface p-4 sm:p-5"
       aria-label={label}
     >
-      <header className="mb-4 flex items-center justify-between gap-3">
-        <h3 className="font-display text-sm font-semibold uppercase tracking-[0.14em] text-text">
-          {label}
-        </h3>
-        <ul className="flex flex-wrap items-center gap-3">
-          {series.map((s, i) => (
-            <li key={s.name} className="flex items-center gap-1.5">
-              <span
-                aria-hidden="true"
-                className="inline-block h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: seriesColor(s, i, theme) }}
-              />
-              <span className="font-mono text-[0.65rem] uppercase tracking-wider text-muted">
-                {s.name}
-              </span>
-            </li>
-          ))}
-        </ul>
+      {/* Title + one-line subtitle: WHAT this chart measures. */}
+      <header className="mb-3">
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+          <div className="min-w-0">
+            <h3 className="font-display text-sm font-semibold uppercase tracking-[0.14em] text-text">
+              {title}
+            </h3>
+            {subtitle && (
+              <p className="mt-0.5 font-mono text-[0.7rem] text-muted">{subtitle}</p>
+            )}
+          </div>
+
+          {/* Visible legend: WHICH line is which, with its latest value. */}
+          <ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+            {series.map((s, i) => (
+              <li key={s.name} className="flex items-center gap-1.5">
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: colors[i] }}
+                />
+                <span className="font-mono text-[0.65rem] uppercase tracking-wider text-muted">
+                  {s.name}
+                </span>
+                {lastValues[i] !== undefined && (
+                  <span
+                    className="font-mono text-[0.65rem] font-semibold tabular-nums text-text"
+                    style={{ color: colors[i] }}
+                  >
+                    {fmtUnit(lastValues[i] as number, units[s.name] ?? '')}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
       </header>
 
       {/* Accessible text fallback for screen readers */}
       <p className="sr-only">
-        {label}: trend chart across {xLabels.join(', ')} for series{' '}
-        {series.map((s) => s.name).join(', ')}.
+        {title}
+        {subtitle ? `. ${subtitle}` : ''}. {xCaption} axis: {xLabels.join(', ')}.{' '}
+        {series
+          .map((s) => {
+            const last = s.data[s.data.length - 1];
+            return `${s.name} latest ${fmtUnit(last, units[s.name] ?? '')}`;
+          })
+          .join('; ')}
+        .
       </p>
 
-      <div className="h-56 w-full sm:h-64" aria-hidden="true">
+      <div className="h-60 w-full sm:h-72" aria-hidden="true">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+          <ComposedChart
+            data={data}
+            margin={{ top: 16, right: useDualAxis ? 16 : 28, bottom: 24, left: 8 }}
+          >
             <defs>
-              {series.map((s, i) => {
-                const c = seriesColor(s, i, theme);
-                return (
-                  <linearGradient
-                    key={s.name}
-                    id={`${gradientPrefix}-${i}`}
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="0%" stopColor={c} stopOpacity={0.32} />
-                    <stop offset="100%" stopColor={c} stopOpacity={0} />
-                  </linearGradient>
-                );
-              })}
+              {series.map((s, i) => (
+                <linearGradient
+                  key={s.name}
+                  id={`${gradientPrefix}-${i}`}
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop offset="0%" stopColor={colors[i]} stopOpacity={0.26} />
+                  <stop offset="100%" stopColor={colors[i]} stopOpacity={0} />
+                </linearGradient>
+              ))}
             </defs>
 
             <CartesianGrid
               vertical={false}
               stroke={theme.border}
-              strokeOpacity={0.5}
+              strokeOpacity={0.55}
               strokeDasharray="2 4"
             />
+
+            {/* X axis: the match labels, captioned so it reads as "Match …". */}
             <XAxis
               dataKey="x"
-              tick={{ fill: theme.muted, fontSize: 11, fontFamily: 'var(--font-mono)' }}
+              tick={tick}
               tickLine={false}
               axisLine={{ stroke: theme.border }}
-              dy={4}
-            />
+              dy={6}
+              interval="preserveStartEnd"
+              minTickGap={8}
+            >
+              <Label
+                value={`${xCaption} (most recent →)`}
+                position="bottom"
+                offset={8}
+                style={axisLabelStyle}
+              />
+            </XAxis>
+
+            {/* Left Y axis: labelled with the (primary) unit. */}
             <YAxis
-              tick={{ fill: theme.muted, fontSize: 11, fontFamily: 'var(--font-mono)' }}
+              yAxisId="left"
+              tick={tick}
               tickLine={false}
               axisLine={false}
-              width={44}
-            />
+              width={52}
+              tickFormatter={(v: number) => fmt(v)}
+              tickCount={5}
+              domain={['auto', 'auto']}
+            >
+              <Label
+                value={leftAxisTitle}
+                angle={-90}
+                position="insideLeft"
+                style={{ ...axisLabelStyle, textAnchor: 'middle' }}
+              />
+            </YAxis>
+
+            {/* Right Y axis only when the two series live on different scales. */}
+            {useDualAxis && (
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                tick={tick}
+                tickLine={false}
+                axisLine={false}
+                width={52}
+                tickFormatter={(v: number) => fmt(v)}
+                tickCount={5}
+                domain={['auto', 'auto']}
+              >
+                <Label
+                  value={rightAxisTitle}
+                  angle={90}
+                  position="insideRight"
+                  style={{ ...axisLabelStyle, textAnchor: 'middle' }}
+                />
+              </YAxis>
+            )}
+
             <Tooltip
-              cursor={{ stroke: theme.muted, strokeOpacity: 0.4, strokeDasharray: '3 3' }}
-              content={<ChartTooltip theme={theme} />}
+              cursor={{ stroke: theme.muted, strokeOpacity: 0.45, strokeDasharray: '3 3' }}
+              content={
+                <ChartTooltip theme={theme} units={units} xCaption={xCaption} />
+              }
             />
 
             {series.map((s, i) => {
-              const c = seriesColor(s, i, theme);
+              const c = colors[i];
+              const axisId = useDualAxis && i === 1 ? 'right' : 'left';
+              const isLast = i === series.length - 1;
               return (
                 <Area
                   key={s.name}
+                  yAxisId={axisId}
                   type="monotone"
                   dataKey={s.name}
+                  name={s.name}
                   stroke={c}
-                  strokeWidth={2}
+                  strokeWidth={2.25}
                   fill={`url(#${gradientPrefix}-${i})`}
                   dot={false}
                   activeDot={{ r: 4, strokeWidth: 0, fill: c }}
                   isAnimationActive={false}
-                />
+                >
+                  {/* Pin the latest value on the final point of each series so
+                      the reader sees "where it ended up" without hovering.
+                      Only render on one series-pass to avoid label pile-up;
+                      LabelList already targets the last datum via content. */}
+                  <LabelList
+                    dataKey={s.name}
+                    content={(props) => (
+                      <LastValueLabel
+                        {...props}
+                        unit={units[s.name] ?? ''}
+                        color={c}
+                        surface={theme.surface}
+                        lastIndex={xLabels.length - 1}
+                        nudgeUp={isLast}
+                      />
+                    )}
+                  />
+                </Area>
               );
             })}
-          </AreaChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
     </section>
+  );
+}
+
+/**
+ * Renders a small pill with the latest value, but ONLY on the final data point
+ * of the series (Recharts calls the content renderer once per point; we no-op
+ * everything except `index === lastIndex`). This is the "highlighted last-value
+ * label" the chart needs to be self-explanatory.
+ */
+function LastValueLabel(props: {
+  x?: number | string;
+  y?: number | string;
+  value?: number | string;
+  index?: number;
+  unit: string;
+  color: string;
+  surface: string;
+  lastIndex: number;
+  nudgeUp: boolean;
+}) {
+  const { x, y, value, index, unit, color, surface, lastIndex, nudgeUp } = props;
+  if (index !== lastIndex) return null;
+  const num = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(num)) return null;
+
+  const cx = typeof x === 'number' ? x : Number(x);
+  const cy = typeof y === 'number' ? y : Number(y);
+  if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
+
+  const text = fmtUnit(num, unit);
+  const padX = 6;
+  const charW = 6.6;
+  const w = text.length * charW + padX * 2;
+  const h = 17;
+  // Offset the pill above/below the point to reduce overlap when two series
+  // end near each other.
+  const dy = nudgeUp ? -(h + 8) : 8;
+  const rectX = cx - w - 8 < 0 ? cx + 8 : cx - w - 8;
+  const rectY = cy + dy;
+
+  return (
+    <g aria-hidden="true">
+      <circle cx={cx} cy={cy} r={3.5} fill={color} stroke={surface} strokeWidth={1.5} />
+      <rect
+        x={rectX}
+        y={rectY}
+        width={w}
+        height={h}
+        rx={4}
+        fill={surface}
+        stroke={color}
+        strokeWidth={1}
+        opacity={0.95}
+      />
+      <text
+        x={rectX + w / 2}
+        y={rectY + h / 2}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fill={color}
+        fontSize={10.5}
+        fontFamily="var(--font-mono)"
+        fontWeight={700}
+      >
+        {text}
+      </text>
+    </g>
   );
 }
 
