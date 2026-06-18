@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Theme token system, Stats Empire
+ * Each [data-theme] block sets --color-* and --font-* CSS variables.
+ * Tailwind (tailwind.config.ts) maps utilities to these variables, so any
+ * component using e.g. `bg-bg text-text accent1` re-themes automatically.
+ * All text/bg pairs are chosen to pass WCAG 2.1 AA contrast.
+ *
+ * Font family variables receive next/font-injected stack variables
+ * (e.g. var(--font-archivo)) from app/layout.tsx, with system fallbacks.
+ */
+
+:root,
+[data-theme="evolved"] {
+  /* A, Evolved Empire */
+  --color-bg: #0a0e16;
+  --color-surface: #121826;
+  --color-surface-alt: #1a2233;
+  --color-text: #f4f7fb;
+  --color-muted: #9aa7bd;
+  --color-border: #2a3548;
+  --color-accent1: #c6f432; /* lime */
+  --color-accent2: #22b8e6; /* cyan */
+
+  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, "SFMono-Regular", monospace;
+}
+
+[data-theme="court"] {
+  /* B, Court Vision */
+  --color-bg: #0b0f14;
+  --color-surface: #131a22;
+  --color-surface-alt: #1d2731;
+  --color-text: #f4f7fb;
+  --color-muted: #93a1b0;
+  --color-border: #283543;
+  --color-accent1: #e6ff3a; /* lime */
+  --color-accent2: #ff5a3c; /* orange */
+
+  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), ui-monospace, "SFMono-Regular", monospace;
+}
+
+[data-theme="precision"] {
+  /* C, Precision Grid */
+  --color-bg: #0a0b0d;
+  --color-surface: #14161a;
+  --color-surface-alt: #1e2127;
+  --color-text: #e8eaed;
+  --color-muted: #9097a1;
+  --color-border: #2b2f37;
+  --color-accent1: #3ddc97; /* green */
+  --color-accent2: #e8b14c; /* amber */
+
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Smooth in-page anchor navigation for the nav links + footer links.
+       Neutralised under prefers-reduced-motion by the media query below. */
+    scroll-behavior: smooth;
+    /* Offset anchored sections below the fixed SiteNav so headings aren't
+       hidden under the bar when jumped to. */
+    scroll-padding-top: 5rem;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    margin: 0;
+  }
+
+  /* Visible, accent-colored focus ring for keyboard navigation (WCAG 2.4.7) */
+  :focus-visible {
+    outline: 2px solid var(--color-accent2);
+    outline-offset: 2px;
+  }
+
+  /* Respect reduced-motion at the platform level. Component-level
+     framer-motion guards still apply; this is the global safety net. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Subtle grid texture overlay, driven by theme border color so it
+     adapts per palette. Apply to a positioned container. */
+  .grid-texture {
+    background-image:
+      linear-gradient(to right, var(--color-border) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--color-border) 1px, transparent 1px);
+    background-size: 44px 44px;
+    background-position: center center;
+    opacity: 0.12;
+  }
+
+  .grid-texture-fine {
+    background-image:
+      linear-gradient(to right, var(--color-border) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--color-border) 1px, transparent 1px);
+    background-size: 16px 16px;
+    opacity: 0.08;
+  }
+}
