@@ -109,6 +109,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'serve-plus-one',
     label: 'Serve +1 forehand winner',
+    kind: 'Forehand winner',
     points: [[0.5, 0.95], [0.7, 0.32], [0.18, 0.7], [0.16, 0.12]],
     outcome: 'winner',
     intensity: 0.94,
@@ -116,6 +117,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'crosscourt-exchange',
     label: 'Crosscourt rally -> winner',
+    kind: 'Backhand winner',
     points: [[0.2, 0.85], [0.8, 0.2], [0.2, 0.8], [0.84, 0.1]],
     outcome: 'winner',
     intensity: 0.82,
@@ -123,6 +125,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'dtl-redirect',
     label: 'Down-the-line redirect',
+    kind: 'Forehand winner',
     points: [[0.78, 0.82], [0.74, 0.5], [0.7, 0.22], [0.16, 0.12]],
     outcome: 'winner',
     intensity: 0.76,
@@ -130,6 +133,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'approach-volley',
     label: 'Approach -> volley winner',
+    kind: 'Volley',
     points: [[0.5, 0.9], [0.55, 0.62], [0.5, 0.46], [0.6, 0.2]],
     outcome: 'winner',
     intensity: 0.7,
@@ -137,6 +141,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'ace-wide-ad',
     label: 'Ace, out wide ad court',
+    kind: 'Serve',
     points: [[0.5, 0.95], [0.42, 0.6], [0.3, 0.32]],
     outcome: 'winner',
     intensity: 0.66,
@@ -144,6 +149,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'drop-shot',
     label: 'Drop shot winner',
+    kind: 'Drop shot',
     points: [[0.5, 0.88], [0.5, 0.62], [0.48, 0.5], [0.5, 0.46]],
     outcome: 'winner',
     intensity: 0.58,
@@ -151,6 +157,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'baseline-grind',
     label: 'Baseline grind, ball in',
+    kind: 'Backhand',
     points: [[0.3, 0.85], [0.7, 0.18], [0.3, 0.82], [0.68, 0.2]],
     outcome: 'make',
     intensity: 0.5,
@@ -158,6 +165,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'unforced-error',
     label: 'Forehand unforced error',
+    kind: 'Unforced error',
     points: [[0.4, 0.88], [0.7, 0.3], [0.74, 0.18]],
     outcome: 'error',
     intensity: 0.42,

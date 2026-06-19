@@ -38,6 +38,7 @@ import type { SportKey } from '@/lib/types';
 import { PitchBackground, TrajectoryLines } from '@/components/viz';
 import { useFreemiumTrigger } from '@/components/freemium';
 import CourtBackdrop from './CourtBackdrop';
+import { ProvenanceBadge } from './Provenance';
 
 export interface HeroProps {
   /**
@@ -132,6 +133,9 @@ function HeroView({
           <p className="max-w-xl font-body text-base leading-relaxed text-muted sm:text-lg">
             {HERO.subhead}
           </p>
+
+          {/* Hybrid trust badge: human-verified, senior-audited. */}
+          <ProvenanceBadge className="backdrop-blur" />
 
           {/* Dual CTA */}
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">

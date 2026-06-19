@@ -43,15 +43,36 @@ site** in the **Court Vision** identity (the default theme), assembled from the
 **Section order** (top → bottom; also the in-page anchor targets):
 
 ```
-SiteNav · Hero(#top) · ProofStats · Problem(#problem) · HowItWorks(#how-it-works)
-  · MultiSportCoverage(#coverage) · ReportBento(#report) · WhatsInReport(#whats-in-report)
-  · HumanVsAi(#human-vs-ai) · Pricing(#pricing) · WhyUs(#why-us) · FinalCta · Faq(#faq)
-  · SiteFooter
+SiteNav · Hero(#top) · ProofStats · Provenance(#provenance, "how it's made")
+  · MultiSportCoverage(#coverage) · [ReportBento + WhatsInReport](#report)
+  · WhyHybrid: Problem(#problem) + HumanVsAi(#human-vs-ai) · OpponentScouting(#opponent-scouting)
+  · Pricing(#pricing) + BilingualStrip · Faq(#faq) · FinalCta · SiteFooter
 ```
+
+This is the tightened flow shipped after the "page is too long" feedback. Three
+changes shortened it by roughly a third while keeping every key idea:
+
+- The three overlapping "why us" stretches collapsed into ONE **Why hybrid**
+  stretch: `Problem` (single-mode vs hybrid framing) flows straight into
+  `HumanVsAi` (the dimension-by-dimension table). The old standalone `WhyUs`
+  trio was dropped as redundant (its cards repeated Problem points and HumanVsAi
+  rows). `WhyUs` and the thinner `HowItWorks` are still exported from
+  `components/landing/index.ts` but are no longer mounted on the page; the
+  richer `Provenance` chain-of-custody pipeline now carries the "how it works"
+  explainer and owns the nav's *How it works* link (→ `#provenance`).
+- `WhatsInReport` (the three report pillars) is **folded into the report block**
+  under the shared `#report` wrapper, directly beneath `ReportBento`, so the
+  report reads as one continuous section rather than two.
+- Vertical rhythm tightened: sections now run at `py-14 sm:py-20` (and reduced
+  top/bottom padding where two sections butt together) instead of the old
+  uniform `py-20 sm:py-28`. The `BilingualStrip` badge moved next to `Pricing`
+  (the offer it ships with) rather than floating after the report.
 
 Nav links scroll smoothly to these ids (`html { scroll-behavior: smooth;
 scroll-padding-top: 5rem }` in `globals.css`, offsetting the fixed nav; both
-neutralised under `prefers-reduced-motion`).
+neutralised under `prefers-reduced-motion`). Nav targets are now: *How it works*
+→ `#provenance`, *Sports* → `#coverage`, *Report* → `#report`, *Pricing* →
+`#pricing`, *FAQ* → `#faq`.
 
 The preview port is `8754` via `.claude/launch.json` (`stats-empire-app`).
 

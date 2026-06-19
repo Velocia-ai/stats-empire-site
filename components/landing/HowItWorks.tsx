@@ -2,8 +2,9 @@
 
 // Stats Empire, HowItWorks
 //
-// Four numbered steps (Upload → Assign human logger → Tag → Report) laid out as
-// a play diagram. A single chalk trajectory threads through all four step nodes
+// The provenance pipeline as four numbered steps (Upload -> AI pre-tags ->
+// analyst logs & corrects -> senior analyst audits & signs off) laid out as a
+// play diagram. A single chalk trajectory threads through all four step nodes
 // and draws itself on scroll, exactly like a coach sketching the sequence of a
 // play onto the tactics board. The arc runs horizontally across the row on
 // desktop and vertically down the left rail on mobile.
@@ -15,7 +16,7 @@
 
 import { useRef } from 'react';
 import { motion, useInView, useReducedMotion } from 'framer-motion';
-import { Upload, UserCheck, Tags, FileBarChart } from 'lucide-react';
+import { Upload, Sparkles, UserCheck, ShieldCheck } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import clsx from 'clsx';
 import { HOW_IT_WORKS } from '@/lib/content';
@@ -26,7 +27,9 @@ interface HowItWorksProps {
   className?: string;
 }
 
-const STEP_ICONS: LucideIcon[] = [Upload, UserCheck, Tags, FileBarChart];
+// Icons mirror the provenance pipeline: upload -> AI pre-tags -> analyst logs &
+// corrects -> senior audits & signs off.
+const STEP_ICONS: LucideIcon[] = [Upload, Sparkles, UserCheck, ShieldCheck];
 
 export default function HowItWorks({ content = HOW_IT_WORKS, className }: HowItWorksProps) {
   const reduce = useReducedMotion();

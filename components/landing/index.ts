@@ -36,6 +36,15 @@ export { default as WhatsInReport } from './WhatsInReport';
 
 export { default as HumanVsAi } from './HumanVsAi';
 
+export { default as Provenance, ProvenanceBadge } from './Provenance';
+export type { ProvenanceProps, ProvenanceBadgeProps } from './Provenance';
+
+export { default as OpponentScouting } from './OpponentScouting';
+export type { OpponentScoutingProps } from './OpponentScouting';
+
+export { default as BilingualStrip, BilingualBadge } from './BilingualStrip';
+export type { BilingualStripProps, BilingualBadgeProps } from './BilingualStrip';
+
 export { default as WhyUs } from './WhyUs';
 
 export { default as Pricing } from './Pricing';

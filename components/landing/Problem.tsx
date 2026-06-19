@@ -2,20 +2,22 @@
 
 // Stats Empire, Problem
 //
-// The core tension of the pitch: automated/AI trackers GUESS, a human analyst
-// gives CONTEXT. Rendered as a stack of opposed rows, a struck-through "AI"
-// claim on one side, the human counter on the other, joined by a chalk arc that
-// draws from the cold (AI) side to the warm (human) side as each row enters.
+// Why HYBRID wins. A single-mode approach (pure-AI auto-tracking, or manual-only
+// charting) leaves a gap; the human-led, AI-assisted pipeline closes it.
+// Rendered as a stack of opposed rows: the struck-through single-mode shortfall
+// on one side, the hybrid counter on the other, joined by a chalk arc that draws
+// from the cold (single-mode) side to the warm (hybrid) side as each row enters.
 //
-// The AI column reads as a muted, glitchy guess (accent2 / orange = warning);
-// the human column reads as the confident, lime accent1 answer. Mobile stacks
-// vertically; from md up they sit side by side with the arc between them.
+// The single-mode column reads as a muted, struck-out shortfall (accent2 /
+// orange = warning); the hybrid column reads as the confident, lime accent1
+// answer. Mobile stacks vertically; from md up they sit side by side with the
+// arc between them.
 //
 // Reduced-motion safe throughout.
 
 import { useRef } from 'react';
 import { motion, useInView, useReducedMotion } from 'framer-motion';
-import { ScanLine, Eye } from 'lucide-react';
+import { ScanLine, Layers } from 'lucide-react';
 import clsx from 'clsx';
 import { PROBLEM } from '@/lib/content';
 import type { Problem as ProblemContent } from '@/lib/content';
@@ -58,14 +60,14 @@ export default function Problem({ content = PROBLEM, className }: ProblemProps) 
         <div className="mt-12 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_1fr] md:items-center">
           <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-muted">
             <ScanLine className="h-4 w-4 text-accent2" aria-hidden="true" />
-            AI / auto-trackers guess
+            Single-mode leaves a gap
           </div>
           <span className="hidden font-mono text-xs uppercase tracking-[0.18em] text-border md:block">
             vs
           </span>
           <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-muted md:justify-end">
-            <Eye className="h-4 w-4 text-accent1" aria-hidden="true" />
-            A human sees the match
+            <Layers className="h-4 w-4 text-accent1" aria-hidden="true" />
+            Human-led, AI-assisted closes it
           </div>
         </div>
 
@@ -86,7 +88,7 @@ export default function Problem({ content = PROBLEM, className }: ProblemProps) 
                   className="grid-texture-fine pointer-events-none absolute inset-0"
                 />
                 <p className="relative font-mono text-[0.6rem] uppercase tracking-[0.2em] text-accent2/80">
-                  Automated
+                  Single-mode
                 </p>
                 <p className="relative mt-2 text-sm leading-relaxed text-muted line-through decoration-accent2/50 decoration-1">
                   {point.ai}
@@ -132,7 +134,7 @@ export default function Problem({ content = PROBLEM, className }: ProblemProps) 
                   className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-accent1"
                 />
                 <p className="relative font-mono text-[0.6rem] uppercase tracking-[0.2em] text-accent1">
-                  Human analyst
+                  Hybrid
                 </p>
                 <p className="relative mt-2 text-sm font-medium leading-relaxed text-text">
                   {point.human}

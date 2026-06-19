@@ -121,6 +121,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'drive-baseline',
     label: 'Baseline drive -> layup',
+    kind: 'Drive',
     points: [[0.24, 0.5], [0.2, 0.62], [0.3, 0.74], [0.46, 0.8]],
     outcome: 'make',
     intensity: 0.9,
@@ -128,6 +129,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'drive-middle',
     label: 'Middle drive -> dunk',
+    kind: 'Drive',
     points: [[0.5, 0.4], [0.5, 0.55], [0.5, 0.68], [0.5, 0.83]],
     outcome: 'make',
     intensity: 0.86,
@@ -135,6 +137,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'drive-kickout-corner',
     label: 'Drive & kick -> corner 3',
+    kind: 'Assist',
     points: [[0.62, 0.5], [0.56, 0.64], [0.4, 0.72], [0.09, 0.72]],
     outcome: 'winner',
     intensity: 0.78,
@@ -142,6 +145,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'transition-pullup',
     label: 'Transition pull-up 3',
+    kind: 'Pull-up',
     points: [[0.5, 0.12], [0.5, 0.26], [0.5, 0.38], [0.5, 0.42]],
     outcome: 'make',
     intensity: 0.7,
@@ -149,6 +153,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'pnr-snake',
     label: 'Pick-and-roll snake -> floater',
+    kind: 'Drive',
     points: [[0.7, 0.42], [0.58, 0.52], [0.5, 0.66], [0.5, 0.78]],
     outcome: 'make',
     intensity: 0.66,
@@ -156,6 +161,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'spot-up-relocate',
     label: 'Relocate -> wing 3',
+    kind: 'Catch & shoot',
     points: [[0.5, 0.66], [0.4, 0.58], [0.3, 0.52], [0.24, 0.5]],
     outcome: 'make',
     intensity: 0.58,
@@ -163,6 +169,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'drive-contested-miss',
     label: 'Contested drive -> blocked',
+    kind: 'Turnover',
     points: [[0.36, 0.46], [0.4, 0.6], [0.46, 0.72], [0.52, 0.8]],
     outcome: 'miss',
     intensity: 0.46,
@@ -170,6 +177,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'skip-pass-right',
     label: 'Skip pass -> right corner',
+    kind: 'Assist',
     points: [[0.24, 0.5], [0.5, 0.56], [0.74, 0.66], [0.91, 0.72]],
     outcome: 'winner',
     intensity: 0.62,

@@ -102,6 +102,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'buildup-to-goal',
     label: 'Build-up -> goal',
+    kind: 'Shot',
     points: [[0.3, 0.6], [0.4, 0.48], [0.46, 0.34], [0.5, 0.1]],
     outcome: 'winner',
     intensity: 0.94,
@@ -109,6 +110,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'through-ball-assist',
     label: 'Through ball -> assist',
+    kind: 'Through ball',
     points: [[0.46, 0.46], [0.4, 0.36], [0.3, 0.34], [0.58, 0.12]],
     outcome: 'winner',
     intensity: 0.88,
@@ -116,6 +118,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'left-overlap-cross',
     label: 'Left overlap -> cutback',
+    kind: 'Cross',
     points: [[0.2, 0.5], [0.18, 0.36], [0.24, 0.22], [0.46, 0.16]],
     outcome: 'make',
     intensity: 0.74,
@@ -123,6 +126,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'switch-of-play',
     label: 'Switch to right wing',
+    kind: 'Pass',
     points: [[0.22, 0.5], [0.5, 0.46], [0.78, 0.52]],
     outcome: 'make',
     intensity: 0.66,
@@ -130,6 +134,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'one-two-half-space',
     label: 'One-two, left half-space',
+    kind: 'Pass',
     points: [[0.34, 0.5], [0.42, 0.4], [0.34, 0.32], [0.44, 0.22]],
     outcome: 'make',
     intensity: 0.7,
@@ -137,6 +142,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'cutback-chance',
     label: 'Cutback -> shot saved',
+    kind: 'Key pass',
     points: [[0.78, 0.3], [0.7, 0.22], [0.5, 0.18], [0.42, 0.14]],
     outcome: 'miss',
     intensity: 0.58,
@@ -144,6 +150,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'progressive-carry',
     label: 'Progressive carry from deep',
+    kind: 'Carry',
     points: [[0.3, 0.74], [0.3, 0.6], [0.34, 0.46], [0.4, 0.36]],
     outcome: 'make',
     intensity: 0.62,
@@ -151,6 +158,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'recovery-to-reset',
     label: 'Ball recovery -> reset',
+    kind: 'Pass',
     points: [[0.5, 0.82], [0.42, 0.72], [0.38, 0.62], [0.3, 0.58]],
     outcome: 'neutral',
     intensity: 0.4,

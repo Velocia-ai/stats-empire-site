@@ -6,12 +6,15 @@
 //
 //   1) Pay-as-you-scale TOKEN PACKS, the five-rung ladder from pay-per-match
 //      ($49) down to Elite ($29/match), with "Academy" flagged most popular.
-//   2) The annual ACADEMY SITE LICENSE, three enterprise tiers + everything a
-//      license includes.
+//      This is the self-serve, per-club tier.
+//   2) The custom LEAGUES & FEDERATIONS offering, the premium tier: a branded
+//      league portal, a league-wide stat + leaderboard hub, automated highlight
+//      reels (weekly / monthly / seasonal) and human-led per-match analysis for
+//      every club, on custom terms with a "Talk to us" CTA.
 //
-// Plus the supporting contract: delivery (standard + express), rollover, add-ons
-// and the Western charting price anchor, all read verbatim from lib/pricing.ts
-// (single source of truth; numbers are never recomputed here).
+// Plus the supporting contract: delivery (12h to 24h), rollover, add-ons and the
+// positive value statement, all read verbatim from lib/pricing.ts (single source
+// of truth; numbers are never recomputed here).
 //
 // Every pack/tier "Unlock" CTA opens the freemium funnel. Wiring matches the
 // rest of the suite (Hero / SiteNav / FinalCta): pass `onStart` to drive a local
@@ -34,14 +37,13 @@ import {
 } from 'lucide-react';
 
 import {
-  ACADEMY_TIERS,
   ADDONS,
   DELIVERY,
-  LICENSE_INCLUDES,
+  LEAGUE_OFFERING,
   ROLLOVER,
   TOKEN_PACKS,
-  WESTERN_ANCHOR,
-  type AcademyTier,
+  VALUE_STATEMENT,
+  type HighlightCadence,
   type TokenPack,
 } from '@/lib/pricing';
 import { useFreemiumTrigger } from '@/components/freemium';
@@ -142,8 +144,8 @@ function PricingView({
 
         {/* ---- Delivery / rollover / add-ons / anchor ------------------- */}
         <ul className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <FactCard icon={Clock} title="Standard delivery" body={DELIVERY.standard} />
-          <FactCard icon={Zap} title="Express 24h" body={DELIVERY.express} />
+          <FactCard icon={Clock} title="Express 12h to 24h" body={DELIVERY.standard} />
+          <FactCard icon={Zap} title="Human-led, AI-assisted" body={DELIVERY.express} />
           <FactCard icon={RefreshCw} title="Tokens roll over" body={ROLLOVER} />
           <FactCard
             icon={Sparkles}
@@ -154,50 +156,53 @@ function PricingView({
 
         <p className="mt-6 flex items-start gap-2 rounded-2xl border border-accent2/30 bg-accent2/[0.06] px-5 py-4 font-body text-sm leading-relaxed text-text">
           <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent2" aria-hidden />
-          <span>{WESTERN_ANCHOR}</span>
+          <span>{VALUE_STATEMENT}</span>
         </p>
 
-        {/* ---- Academy site license ------------------------------------- */}
+        {/* ---- Leagues & Federations (custom, premium tier) ------------- */}
         <div className="mt-20">
           <header className="max-w-2xl">
             <p className="inline-flex items-center gap-2 font-mono text-xs font-medium uppercase tracking-[0.22em] text-accent1">
               <Trophy className="h-3.5 w-3.5" aria-hidden />
-              Academy site license
+              {LEAGUE_OFFERING.name}
             </p>
             <h3 className="mt-4 font-display text-2xl font-bold leading-tight text-text sm:text-3xl md:text-4xl">
-              Annual coverage for academies, clubs &amp; federations.
+              A complete intelligence platform for your whole competition.
             </h3>
             <p className="mt-4 text-base leading-relaxed text-muted">
-              A dedicated logging team and an academy-wide dashboard, roughly
-              $5-50 per player, per year depending on roster size and volume.
+              {LEAGUE_OFFERING.tagline}
             </p>
           </header>
 
           <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
-            {/* License tiers */}
-            <div
-              role="list"
-              aria-label="Academy license tiers"
-              className="grid grid-cols-1 gap-4 sm:grid-cols-3"
-            >
-              {ACADEMY_TIERS.map((tier, idx) => (
-                <TierCard
-                  key={tier.name}
-                  tier={tier}
-                  index={idx}
-                  reduce={!!reduce}
-                  onStart={onStart}
-                />
-              ))}
+            {/* Highlight cadences */}
+            <div className="flex flex-col gap-4">
+              <p className="font-mono text-[0.7rem] uppercase tracking-[0.2em] text-accent1">
+                Automated highlight reels
+              </p>
+              <div
+                role="list"
+                aria-label="Highlight reel cadences"
+                className="grid grid-cols-1 gap-4 sm:grid-cols-3"
+              >
+                {LEAGUE_OFFERING.cadences.map((cadence, idx) => (
+                  <CadenceCard
+                    key={cadence.name}
+                    cadence={cadence}
+                    index={idx}
+                    reduce={!!reduce}
+                  />
+                ))}
+              </div>
             </div>
 
-            {/* What every license includes */}
+            {/* What every league deal includes */}
             <div className="rounded-3xl border border-border bg-surface p-6 sm:p-7">
               <p className="font-mono text-[0.7rem] uppercase tracking-[0.2em] text-accent1">
-                Every license includes
+                Every league deal includes
               </p>
               <ul className="mt-4 flex flex-col gap-3">
-                {LICENSE_INCLUDES.map((item) => (
+                {LEAGUE_OFFERING.includes.map((item) => (
                   <li key={item} className="flex items-start gap-3 text-sm leading-relaxed text-text">
                     <span
                       aria-hidden
@@ -209,19 +214,22 @@ function PricingView({
                   </li>
                 ))}
               </ul>
+              <p className="mt-5 font-mono text-[0.72rem] uppercase tracking-wider text-accent2">
+                {LEAGUE_OFFERING.priceNote}
+              </p>
               <button
                 type="button"
                 onClick={onStart}
-                className="group mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full border border-accent1/50 px-5 py-3 font-mono text-sm font-semibold uppercase tracking-wider text-accent1 transition-colors hover:bg-accent1 hover:text-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2"
+                className="group mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full border border-accent1/50 px-5 py-3 font-mono text-sm font-semibold uppercase tracking-wider text-accent1 transition-colors hover:bg-accent1 hover:text-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2"
               >
-                Unlock a free game first
+                {LEAGUE_OFFERING.cta}
                 <ArrowRight
                   className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none"
                   aria-hidden
                 />
               </button>
               <p className="mt-3 text-center font-body text-xs text-muted">
-                Or email{' '}
+                {LEAGUE_OFFERING.note} Or email{' '}
                 <a
                   href="mailto:partnerships@statsempire.com"
                   className="text-accent1 underline-offset-2 hover:underline"
@@ -337,21 +345,18 @@ function PackCard({
 }
 
 // ---------------------------------------------------------------------------
-// One academy license tier.
+// One highlight-reel cadence card (weekly / monthly / seasonal).
 // ---------------------------------------------------------------------------
 
-function TierCard({
-  tier,
+function CadenceCard({
+  cadence,
   index,
   reduce,
-  onStart,
 }: {
-  tier: AcademyTier;
+  cadence: HighlightCadence;
   index: number;
   reduce: boolean;
-  onStart: () => void;
 }) {
-  const highlighted = !!tier.highlighted;
   return (
     <motion.div
       role="listitem"
@@ -359,58 +364,12 @@ function TierCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-10% 0px' }}
       transition={{ duration: 0.5, delay: reduce ? 0 : index * 0.08, ease: [0.16, 1, 0.3, 1] }}
-      className={[
-        'flex flex-col rounded-3xl p-5 sm:p-6',
-        highlighted
-          ? 'border border-accent1/55 bg-accent1/[0.05] shadow-[0_0_40px_-14px_var(--color-accent1)]'
-          : 'border border-border bg-surface',
-      ].join(' ')}
+      className="flex flex-col rounded-3xl border border-border bg-surface p-5 sm:p-6"
     >
-      <div className="flex items-center justify-between">
-        <p className="font-display text-base font-bold text-text">{tier.name}</p>
-        {highlighted && (
-          <span className="rounded-full bg-accent1/15 px-2 py-0.5 font-mono text-[0.58rem] font-bold uppercase tracking-wider text-accent1">
-            Recommended
-          </span>
-        )}
-      </div>
-
-      <p
-        className={[
-          'mt-4 font-display text-2xl font-extrabold tracking-tight',
-          highlighted ? 'text-accent1' : 'text-text',
-        ].join(' ')}
-      >
-        {tier.display}
+      <p className="font-display text-base font-bold text-text">{cadence.name}</p>
+      <p className="mt-3 flex-1 font-body text-sm leading-relaxed text-muted">
+        {cadence.description}
       </p>
-
-      <dl className="mt-4 flex flex-col gap-1.5 font-mono text-[0.72rem] uppercase tracking-wider text-muted">
-        <div className="flex items-center justify-between gap-2">
-          <dt>Matches / yr</dt>
-          <dd className="tabular-nums text-text">{tier.matchesPerYear.toLocaleString('en-US')}</dd>
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <dt>Per match</dt>
-          <dd className="tabular-nums text-text">{usd.format(tier.perMatch)}</dd>
-        </div>
-      </dl>
-
-      <button
-        type="button"
-        onClick={onStart}
-        className={[
-          'group mt-6 inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2',
-          highlighted
-            ? 'bg-accent1 text-bg hover:-translate-y-0.5 motion-reduce:transform-none'
-            : 'border border-border text-text hover:border-accent1/50 hover:text-accent1',
-        ].join(' ')}
-      >
-        Unlock
-        <ArrowRight
-          className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none"
-          aria-hidden
-        />
-      </button>
     </motion.div>
   );
 }

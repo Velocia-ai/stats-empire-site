@@ -99,6 +99,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'clearance-to-fwd',
     label: 'Centre clearance -> inside 50',
+    kind: 'Clearance',
     points: [[0.5, 0.5], [0.48, 0.4], [0.49, 0.3], [0.5, 0.22]],
     outcome: 'winner',
     intensity: 0.92,
@@ -106,6 +107,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'inside-50-entry',
     label: 'Wing kick -> goal assist',
+    kind: 'Goal',
     points: [[0.3, 0.5], [0.36, 0.4], [0.42, 0.32], [0.46, 0.18]],
     outcome: 'winner',
     intensity: 0.84,
@@ -113,6 +115,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'rebound-50',
     label: 'Rebound 50 -> corridor',
+    kind: 'Kick',
     points: [[0.4, 0.84], [0.45, 0.7], [0.52, 0.58], [0.5, 0.5]],
     outcome: 'make',
     intensity: 0.74,
@@ -120,6 +123,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'handball-chain',
     label: 'Handball chain out of contest',
+    kind: 'Handball',
     points: [[0.5, 0.52], [0.56, 0.5], [0.62, 0.46], [0.7, 0.44]],
     outcome: 'make',
     intensity: 0.66,
@@ -127,6 +131,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'switch-kick',
     label: 'Switch kick to open wing',
+    kind: 'Kick',
     points: [[0.42, 0.62], [0.3, 0.55], [0.22, 0.5], [0.24, 0.42]],
     outcome: 'neutral',
     intensity: 0.56,
@@ -134,6 +139,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'long-bomb-fwd',
     label: 'Long bomb inside 50',
+    kind: 'Inside 50',
     points: [[0.5, 0.62], [0.5, 0.46], [0.48, 0.32], [0.5, 0.22]],
     outcome: 'make',
     intensity: 0.62,
@@ -141,6 +147,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'kick-in',
     label: 'Kick-in to corridor',
+    kind: 'Kick',
     points: [[0.5, 0.88], [0.46, 0.78], [0.48, 0.68], [0.5, 0.6]],
     outcome: 'make',
     intensity: 0.5,
@@ -148,6 +155,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'turnover-kick',
     label: 'Forward kick -> intercepted',
+    kind: 'Kick',
     points: [[0.55, 0.4], [0.62, 0.34], [0.7, 0.3], [0.62, 0.26]],
     outcome: 'error',
     intensity: 0.4,

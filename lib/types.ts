@@ -43,6 +43,13 @@ export interface TrajectoryPath {
   id: string;
   /** Optional human-readable name for the play (e.g. "Key pass -> assist"). */
   label?: string;
+  /**
+   * Sport-specific play type in that sport's own vocabulary (e.g. tennis
+   * "Forehand winner", soccer "Through ball", basketball "Catch & shoot").
+   * TrajectoryLines derives its legend from the distinct `kind` values present,
+   * falling back to `outcome` when absent. Colour stays keyed off `outcome`.
+   */
+  kind?: string;
   points: [number, number][];
   outcome?: Outcome;
   intensity?: number;

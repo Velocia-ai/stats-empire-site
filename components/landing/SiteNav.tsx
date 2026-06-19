@@ -45,7 +45,7 @@ export interface SiteNavProps {
 }
 
 const DEFAULT_LINKS: NavLink[] = [
-  { label: 'How it works', href: '#how-it-works' },
+  { label: 'How it works', href: '#provenance' },
   { label: 'Sports', href: '#coverage' },
   { label: 'Report', href: '#report' },
   { label: 'Pricing', href: '#pricing' },

@@ -3,7 +3,8 @@
 // Stats Empire, HumanVsAi
 //
 // An advanced two-column comparison grid across the dimensions coaches care
-// about (HUMAN_VS_AI.rows). The "Stats Empire / Human" column is the highlighted
+// about (HUMAN_VS_AI.rows): pure-AI auto-trackers vs the human-led, AI-assisted
+// (hybrid) approach. The "Stats Empire · Hybrid" column is the highlighted
 // winner: a glowing lime accent1 rail, a chalk underline on the header, and a
 // check chip on every cell, while the "AI / auto" column stays muted with a
 // warning-orange cross chip.
@@ -59,7 +60,7 @@ export default function HumanVsAi({ content = HUMAN_VS_AI, className }: HumanVsA
         <div
           ref={ref}
           role="table"
-          aria-label="Human analyst versus AI trackers, by dimension"
+          aria-label="Hybrid, human-led plus AI-assisted, versus pure-AI trackers, by dimension"
           className="mt-12 overflow-hidden rounded-3xl border border-border bg-surface/40"
         >
           {/* Header row (hidden on mobile; the dimension label heads each card instead) */}
@@ -74,7 +75,7 @@ export default function HumanVsAi({ content = HUMAN_VS_AI, className }: HumanVsA
             </div>
             <div role="columnheader" className="px-5 py-4">
               <span className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-accent2/90">
-                AI / auto-trackers
+                Pure-AI auto-trackers
               </span>
             </div>
             {/* Highlighted winner column header */}
@@ -84,7 +85,7 @@ export default function HumanVsAi({ content = HUMAN_VS_AI, className }: HumanVsA
             >
               <span className="relative inline-flex flex-col">
                 <span className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-accent1">
-                  Stats Empire · Human
+                  Stats Empire · Hybrid
                 </span>
                 <span className="mt-1.5 block w-full">
                   <ChalkUnderline delay={0.2} />

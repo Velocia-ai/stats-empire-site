@@ -112,6 +112,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'hr-center',
     label: 'HR to center, 419 ft',
+    kind: 'Home run',
     points: [[0.5, 0.92], [0.5, 0.6], [0.5, 0.35], [0.5, 0.24]],
     outcome: 'winner',
     intensity: 0.96,
@@ -119,6 +120,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'hr-pull',
     label: 'HR pulled to LF, 412 ft',
+    kind: 'Home run',
     points: [[0.5, 0.92], [0.42, 0.62], [0.33, 0.4], [0.27, 0.28]],
     outcome: 'winner',
     intensity: 0.9,
@@ -126,6 +128,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'triple-rf',
     label: 'Triple, RF corner',
+    kind: 'Double',
     points: [[0.5, 0.92], [0.62, 0.66], [0.74, 0.46], [0.82, 0.33]],
     outcome: 'winner',
     intensity: 0.8,
@@ -133,6 +136,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'double-lf-gap',
     label: 'Double, LF gap line drive',
+    kind: 'Line drive',
     points: [[0.5, 0.92], [0.4, 0.66], [0.3, 0.46], [0.22, 0.34]],
     outcome: 'winner',
     intensity: 0.72,
@@ -140,6 +144,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'single-up-middle',
     label: 'Single, up the middle',
+    kind: 'Single',
     points: [[0.5, 0.92], [0.49, 0.72], [0.49, 0.56], [0.48, 0.46]],
     outcome: 'make',
     intensity: 0.6,
@@ -147,6 +152,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'single-oppo-rf',
     label: 'Single, opposite-field RF',
+    kind: 'Single',
     points: [[0.5, 0.92], [0.6, 0.7], [0.7, 0.54], [0.76, 0.47]],
     outcome: 'make',
     intensity: 0.54,
@@ -154,6 +160,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'flyout-lf',
     label: 'Flyout, shallow LF',
+    kind: 'Fly out',
     points: [[0.5, 0.92], [0.43, 0.72], [0.36, 0.58], [0.31, 0.52]],
     outcome: 'error',
     intensity: 0.42,
@@ -161,6 +168,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'groundout',
     label: 'Groundout, 6-3',
+    kind: 'Ground out',
     points: [[0.5, 0.92], [0.5, 0.86], [0.5, 0.81], [0.5, 0.78]],
     outcome: 'error',
     intensity: 0.36,
