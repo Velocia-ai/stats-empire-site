@@ -71,6 +71,12 @@ function CountUp({
     return () => controls.stop();
   }, [active, reduce, target, mv]);
 
+  // Text-only proof points (e.g. "Human-verified") have no number to count up.
+  // Render them as-is so we never prepend a meaningless "0".
+  if (!/\d/.test(value)) {
+    return <span aria-hidden="true">{value}</span>;
+  }
+
   const formatted =
     decimals > 0 ? display.toFixed(decimals) : Math.round(display).toString();
 

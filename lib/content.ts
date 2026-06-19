@@ -256,24 +256,24 @@ export const HOW_IT_WORKS: HowItWorks = {
 
 export const PROVENANCE: Provenance = {
   eyebrow: 'How every report is made',
-  headline: 'AI assists. A human decides. A senior signs off.',
+  headline: 'Logged by humans. Sharpened by AI. Signed off by a senior.',
   subhead:
     'Every report runs through the same chain of custody, so you always know exactly how the numbers were made and who stands behind them.',
   steps: [
     {
-      stage: 'AI pre-tags',
-      owner: 'AI',
-      description:
-        'Models pre-tag events and flag key moments across the full match, so logging starts fast and nothing obvious slips through.',
-    },
-    {
-      stage: 'Analyst logs & corrects',
+      stage: 'A human logs the match',
       owner: 'Analyst',
       description:
-        'A trained analyst reviews every tag, corrects the model and adds tactical context. The human has the final say on what the data means.',
+        'A trained analyst watches the full match and logs every point, event and pattern the way a coach would. People do the work and have the final say on what the data means.',
     },
     {
-      stage: 'Senior audits & signs off',
+      stage: 'AI sharpens quality control',
+      owner: 'AI',
+      description:
+        'We run specialized AI tools across every log to strengthen quality control, so nothing slips through. The numbers stay human-led, just double-checked.',
+    },
+    {
+      stage: 'A senior signs off',
       owner: 'Senior',
       description:
         'A senior analyst audits the log against the footage and signs off before anything reaches you. Verified, not just generated.',
