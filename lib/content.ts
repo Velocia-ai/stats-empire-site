@@ -176,7 +176,7 @@ export const HERO: Hero = {
   eyebrow: 'Human-led, AI-assisted match intelligence',
   headline: 'AI speed. Human judgment. One coach-ready report.',
   subhead:
-    'AI pre-tags the match, trained analysts log, correct and control every event, and a senior analyst signs off. You get a clean visual report you can trust, built for tennis, soccer and basketball, available across five sports.',
+    'Trained analysts log, correct and control every event, specialized AI tools sharpen quality control, and a senior analyst signs off. You get a clean visual report you can trust, built for tennis, soccer and basketball, available across five sports.',
   primaryCta: { label: 'See a free sample report', href: '#free-game' },
   secondaryCta: { label: 'View pricing', href: '#pricing' },
 };
@@ -196,15 +196,15 @@ export const PROBLEM: Problem = {
   eyebrow: 'Why hybrid wins',
   headline: 'Pure AI misses the match. Manual-only is slow and costly.',
   subhead:
-    'Automated tracking is fast but reads pixels, not tactics, and it breaks on real-world footage. Manual-only charting is accurate but eats hours and budget. We combine both: AI does the heavy lifting, trained analysts supply the judgment and audit, so you get speed and context at once.',
+    'Automated tracking is fast but reads pixels, not tactics, and it breaks on real-world footage. Manual-only charting is accurate but eats hours and budget. We combine both: trained analysts do the work and supply the judgment, specialized AI tools sharpen quality control, and a senior analyst audits, so you get speed and context at once.',
   points: [
     {
       ai: 'Counts events but cannot tell you why a pattern is happening.',
-      human: 'AI pre-tags the events; an analyst adds intent, pressure, positioning and shot selection on top.',
+      human: 'A trained analyst logs every event and reads the intent, pressure, positioning and shot selection AI cannot.',
     },
     {
       ai: 'Confuses players, loses the ball in clutter and breaks on broadcast camera cuts.',
-      human: 'AI flags the moments, then a trained analyst follows every player and phase and corrects what the model gets wrong.',
+      human: 'A trained analyst follows every player and phase, with specialized AI tools quality-checking the log so nothing slips through.',
     },
     {
       ai: 'Outputs a raw data dump you still have to interpret and trust on faith.',
@@ -212,7 +212,7 @@ export const PROBLEM: Problem = {
     },
     {
       ai: 'Manual-only charting is accurate but burns a weekend and a real budget per match.',
-      human: 'AI assist cuts the logging time, so you get the same human rigor in 12 to 24 hours.',
+      human: 'Specialized AI tools keep quality control fast, so you get the same human rigor in 12 to 24 hours.',
     },
   ],
 };
@@ -233,15 +233,15 @@ export const HOW_IT_WORKS: HowItWorks = {
     },
     {
       step: 2,
-      title: 'AI pre-tags the footage',
+      title: 'A trained analyst logs the match',
       description:
-        'Our models pre-tag events and flag key moments, giving the analyst a fast, structured starting point instead of a blank timeline.',
+        'A trained analyst who knows your sport watches the full match and logs every event the way a coach would, reading the pressure, intent and decisions AI cannot see. People do the work.',
     },
     {
       step: 3,
-      title: 'A human analyst logs and corrects',
+      title: 'AI sharpens quality control',
       description:
-        'A trained analyst who knows your sport reviews every tag, fixes what AI gets wrong and adds the context AI cannot see: pressure, intent and decisions.',
+        'We run specialized AI tools across the log to strengthen quality control, double-checking the work so nothing obvious slips through.',
     },
     {
       step: 4,
@@ -433,7 +433,7 @@ export const FAQ: Faq = {
     {
       question: 'Is this AI or human analysis?',
       answer:
-        'Both, by design. AI pre-tags the match and flags key moments, a trained analyst logs and corrects every event, and a senior analyst audits and signs off. The human has the final say, so you get AI speed with human judgment.',
+        'Both, by design. Trained analysts log and control every event, specialized AI tools sharpen quality control, and a senior analyst audits and signs off. The human has the final say, so you get human judgment with AI-grade quality control.',
     },
     {
       question: 'How does the token model work?',
