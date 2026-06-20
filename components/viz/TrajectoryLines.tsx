@@ -3,7 +3,7 @@
 // Stats Empire, TrajectoryLines
 //
 // Draws smooth, curved, *directional* paths between sequences of points:
-// baseball hit arcs, AFL kick/disposal lines, basketball drives, tennis
+// baseball hit arcs, American football pass/run lines, basketball drives, tennis
 // rallies, soccer pass-network edges. Each play reads on its own:
 //   - colour buckets the play by sentiment (positive/winner = lime,
 //     shot/goal = orange, error/turnover/neutral = muted), while the in-SVG

@@ -30,8 +30,10 @@ export interface ViewBox {
 const VIEWBOXES: Record<PitchType, ViewBox> = {
   // Baseball: square frame, home plate bottom-centre, diamond + outfield fanning up.
   'baseball-diamond': { width: 1000, height: 1000 },
-  // AFL: oval, wider than tall (~165m x 135m → ~1.22:1) plus a little margin.
-  'afl-oval': { width: 1000, height: 760 },
+  // American football: gridiron seen lengthwise, attacking vertically. The field
+  // of play is 53.3yd wide x 120yd long incl. end zones (~1:2.25 → tall portrait);
+  // we use 600x1000 so the two end zones (top = opponent, bottom = own) read clearly.
+  'football-field': { width: 600, height: 1000 },
   // Basketball half-court: 50ft wide x 47ft deep → ~1.06:1, baseline at the bottom.
   'basketball-halfcourt': { width: 1000, height: 940 },
   // Tennis: full doubles court seen lengthwise (78ft x 36ft → 2.17:1) with margin.

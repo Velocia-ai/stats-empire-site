@@ -26,4 +26,4 @@ npm run build    # static export to ./out
 - `lib/sports/` — per-sport adapters + realistic mock data
 - `lib/content.ts`, `lib/pricing.ts` — copy + offers
 
-Sports covered: tennis, soccer, basketball, baseball/softball, Australian football.
+Sports covered: tennis, soccer, basketball, baseball/softball, American Football.

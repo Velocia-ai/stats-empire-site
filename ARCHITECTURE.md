@@ -25,54 +25,50 @@ Other scripts:
 | `npm run type-check` | `tsc --noEmit`, strict, zero-error contract  |
 | `npm run lint`       | `next lint` (`next/core-web-vitals`)          |
 
-**Demo route:** `/` (the only page), the **complete single-page marketing
-site** in the **Court Vision** identity (the default theme), assembled from the
-`components/landing/*` sections plus the two flagship feature surfaces:
+**Routes:** the marketing site is split into **three prerendered pages** in the
+**Court Vision** identity (the default theme), assembled from the
+`components/landing/*`, `components/report/*` and `components/product/*` sections.
+The shared chrome and the flagship freemium funnel live in the layout so they are
+identical on every route:
 
-- **Freemium flow**, every CTA labeled **Start Free / Unlock / Turn footage
-  into wins** opens the single `<FreemiumFlow/>` (signup → pick sport → unlock →
-  free-trial dashboard). The whole page is wrapped in `<FreemiumFlowProvider>`,
-  which mounts the flow once and exposes `useFreemiumTrigger()` to every CTA, so
-  no section needs an explicit `onStart` (zero prop-drilling).
-- **Report bento**, the `<ReportBento/>` section (`#report`) with a live
-  5-sport toggle; it **opens on Tennis** (the lead featured sport).
-- **`<SiteNav/>`** is fixed at the top and embeds `<ThemeSwitcher/>` (A/B/C);
-  Court Vision (**B**) is active by default, A/Evolved and C/Precision still
-  switchable.
+| Route       | File                   | Role                | Sections |
+|-------------|------------------------|---------------------|----------|
+| `/`         | `app/page.tsx`         | **Home, the story + value** | Hero(`#top`, + trust badge) · ProofStats · Provenance(`#provenance`, how it's made) · MultiSportCoverage(`#coverage`) · WhyHybrid: Problem(`#problem`) + HumanVsAi · OpponentScouting · FinalCta |
+| `/product`  | `app/product/page.tsx` | **Product showcase** | ProductHero(`#top`) · [ReportBento(default Tennis) + WhatsInReport](`#report`) · FreeSampleCta(`#free-game`) |
+| `/pricing`  | `app/pricing/page.tsx` | **The plans**       | PricingHero(`#top`) · Pricing(`#pricing`, token packs + Leagues & Federations) · BilingualStrip · Faq(`#faq`) |
 
-**Section order** (top → bottom; also the in-page anchor targets):
+Shared, layout-level surfaces (in `app/layout.tsx` → `<AppProviders/>`, shown on
+all three routes):
 
-```
-SiteNav · Hero(#top) · ProofStats · Provenance(#provenance, "how it's made")
-  · MultiSportCoverage(#coverage) · [ReportBento + WhatsInReport](#report)
-  · WhyHybrid: Problem(#problem) + HumanVsAi(#human-vs-ai) · OpponentScouting(#opponent-scouting)
-  · Pricing(#pricing) + BilingualStrip · Faq(#faq) · FinalCta · SiteFooter
-```
+- **Freemium flow**, every CTA labeled **Start Free / Unlock / Try a free game**
+  opens the single `<FreemiumFlow/>` (signup → pick sport → unlock → free-trial
+  dashboard). `<AppProviders/>` wraps every page in `<FreemiumFlowProvider>`,
+  which mounts the flow once and exposes `useFreemiumTrigger()` to every CTA on
+  any route, so no section needs an explicit `onStart` (zero prop-drilling).
+- **`<SiteNav/>`** is fixed at the top and embeds the global `<ThemeSwitcher/>`
+  (A/B/C); Court Vision (**B**) is active by default, A/Evolved and C/Precision
+  still switchable. Its links are real routes via `next/link`: Home `/`, Product
+  `/product`, Pricing `/pricing`, How it works `/#provenance`, FAQ `/pricing#faq`.
+- **`<SiteFooter/>`** with route-aware nav columns (internal links via
+  `next/link`, `mailto:` as plain anchors).
 
-This is the tightened flow shipped after the "page is too long" feedback. Three
-changes shortened it by roughly a third while keeping every key idea:
+**Report bento** (`<ReportBento/>`, `#report` on `/product`) has a live 5-sport
+toggle and **opens on Tennis** (the lead featured sport). `WhatsInReport` (the
+three report pillars) is folded directly beneath it under the shared `#report`
+wrapper so the report reads as one continuous section.
 
-- The three overlapping "why us" stretches collapsed into ONE **Why hybrid**
-  stretch: `Problem` (single-mode vs hybrid framing) flows straight into
-  `HumanVsAi` (the dimension-by-dimension table). The old standalone `WhyUs`
-  trio was dropped as redundant (its cards repeated Problem points and HumanVsAi
-  rows). `WhyUs` and the thinner `HowItWorks` are still exported from
-  `components/landing/index.ts` but are no longer mounted on the page; the
-  richer `Provenance` chain-of-custody pipeline now carries the "how it works"
-  explainer and owns the nav's *How it works* link (→ `#provenance`).
-- `WhatsInReport` (the three report pillars) is **folded into the report block**
-  under the shared `#report` wrapper, directly beneath `ReportBento`, so the
-  report reads as one continuous section rather than two.
-- Vertical rhythm tightened: sections now run at `py-14 sm:py-20` (and reduced
-  top/bottom padding where two sections butt together) instead of the old
-  uniform `py-20 sm:py-28`. The `BilingualStrip` badge moved next to `Pricing`
-  (the offer it ships with) rather than floating after the report.
+**Why hybrid** (on `/`): `Problem` (single-mode vs hybrid framing) flows straight
+into `HumanVsAi` (the dimension-by-dimension table). The old standalone `WhyUs`
+trio and the thinner `HowItWorks` are still exported from
+`components/landing/index.ts` but are not mounted; the richer `Provenance`
+chain-of-custody pipeline carries the "how it works" explainer and owns the nav's
+*How it works* link (→ `/#provenance`).
 
-Nav links scroll smoothly to these ids (`html { scroll-behavior: smooth;
+In-page nav anchors still scroll smoothly (`html { scroll-behavior: smooth;
 scroll-padding-top: 5rem }` in `globals.css`, offsetting the fixed nav; both
-neutralised under `prefers-reduced-motion`). Nav targets are now: *How it works*
-→ `#provenance`, *Sports* → `#coverage`, *Report* → `#report`, *Pricing* →
-`#pricing`, *FAQ* → `#faq`.
+neutralised under `prefers-reduced-motion`). Cross-page links go through
+`next/link`: the home hero's sample-report button → `/product`; the product hero
+→ `/pricing`; home/product/pricing cross-link each other.
 
 The preview port is `8754` via `.claude/launch.json` (`stats-empire-app`).
 
@@ -81,63 +77,78 @@ The preview port is `8754` via `.claude/launch.json` (`stats-empire-app`).
 ## 2. Component tree
 
 ```
-app/layout.tsx  (Server Component)
+app/layout.tsx  (Server Component)              ◀── shared by ALL routes
 │  • loads 6 Google fonts via next/font → CSS variables
 │  • <html data-theme="court" suppressHydrationWarning>   ◀── Court Vision = default
 │  └─ <ThemeProvider>  (client: React context + localStorage + html[data-theme])
+│     └─ <AppProviders/>  ("use client", the single shared shell)
+│        │
+│        └─ <FreemiumFlowProvider>  mounts ONE <FreemiumFlow/> + exposes
+│           │                       useFreemiumTrigger() to every CTA, every route
+│           │
+│           ├─ <SiteNav/>     fixed top; next/link routes + Start Free CTA +
+│           │                 global <ThemeSwitcher/> (A/B/C; Court=B) + mobile sheet
+│           │
+│           ├─ {children}     ◀── the per-route page (one of the three below)
+│           │
+│           ├─ <SiteFooter/>  wordmark + route-aware nav columns + contact + legal
+│           │
+│           └─ <FreemiumFlow/>  ("use client"), mounted by the provider
+│               ├─ register  → <SignupModal/>        (dialog, focus trap, "100% FREE")
+│               ├─ select    → <SportSelector/>      (5-sport radiogroup; leads tennis/
+│               │                                      soccer/basketball via SPORTS order)
+│               ├─ unlock    → <UnlockFreeGame/>     (padlock → unlock reveal animation)
+│               └─ dashboard → <FreeTrialDashboard/> (real viz primitives + soft upsell)
+│                    ├─ StatTiles, MetricTable, TrendChart
+│                    └─ PitchBackground + spatial layer chosen by spatialKind
 │
-└─ app/page.tsx  ("use client", thin composition shell)
-   │
-   └─ <FreemiumFlowProvider>     mounts ONE <FreemiumFlow/> + exposes
-      │                          useFreemiumTrigger() to every CTA below
-      │
-      ├─ <SiteNav/>              fixed top; links + Start Free CTA + <ThemeSwitcher/>
-      │                          (A/B/C; Court=B active by default) + mobile sheet
-      │
-      ├─ <main>
-      │   ├─ <Hero/>             #top, CourtBackdrop + rotating tennis/soccer/
-      │   │                      basketball tactics card; Start Free CTA → flow
-      │   ├─ <ProofStats/>       count-up proof strip (5 sports · 100% · $29 · 24h)
-      │   ├─ <Problem/>          #problem, AI-vs-human opposed rows
-      │   ├─ <HowItWorks/>       #how-it-works, 4-step play diagram
-      │   ├─ <MultiSportCoverage/> #coverage, featured tennis/soccer/basketball
-      │   │
-      │   ├─ <div id="report">   ◀── nav "Report" target (scroll-mt-20)
-      │   │   └─ <ReportBento/>  ("use client"), opens on TENNIS
-      │   │       ├─ <SportToggle/>   WAI-ARIA radiogroup, 5 sports, layoutId pill
-      │   │       └─ 6-col bento grid of <BentoTile/> (each body keyed on `sport`)
-      │   │            ├─ HERO spatial → PitchBackground + (SprayChart│Heatmap│TrajectoryLines)
-      │   │            ├─ Headline     → StatTiles (first 4 metrics)
-      │   │            ├─ Zone control → PitchBackground + ZoneCoverage
-      │   │            ├─ Trajectories → PitchBackground + TrajectoryLines
-      │   │            ├─ Form trend   → TrendChart   ◀── the ONLY Recharts surface
-      │   │            └─ Advanced     → MetricTable (full metric set)
-      │   │
-      │   ├─ <WhatsInReport/>    #whats-in-report, Performance/Patterns/Progress
-      │   ├─ <HumanVsAi/>        #human-vs-ai, comparison grid
-      │   ├─ <Pricing/>          #pricing, token packs + academy license;
-      │   │                      every Unlock CTA → flow (lib/pricing.ts)
-      │   ├─ <WhyUs/>            #why-us, 3 positioning cards
-      │   └─ <FinalCta/>         "Turn footage into wins." → flow
-      │   └─ <Faq/>             #faq, accessible accordion
-      │
-      ├─ <SiteFooter/>          wordmark + nav columns + contact + legal
-      │
-      └─ <FreemiumFlow/>         ("use client"), mounted by the provider
-          ├─ register  → <SignupModal/>        (dialog, focus trap, "100% FREE")
-          ├─ select    → <SportSelector/>      (5-sport radiogroup; leads tennis/
-          │                                      soccer/basketball via SPORTS order)
-          ├─ unlock    → <UnlockFreeGame/>     (padlock → unlock reveal animation)
-          └─ dashboard → <FreeTrialDashboard/> (real viz primitives + soft upsell)
-               ├─ StatTiles, MetricTable, TrendChart
-               └─ PitchBackground + spatial layer chosen by spatialKind
+├─ app/page.tsx          /         HOME (server composition)
+│   └─ <main>
+│       ├─ <Hero sampleHref="/product"/>  #top, CourtBackdrop + rotating card;
+│       │                                 Start Free → flow, sample → /product
+│       ├─ <ProofStats/>            count-up proof strip
+│       ├─ <Provenance/>            #provenance, 4-step chain-of-custody pipeline
+│       ├─ <MultiSportCoverage/>    #coverage, featured tennis/soccer/basketball
+│       ├─ <Problem/>               #problem  ┐ Why hybrid
+│       ├─ <HumanVsAi/>             comparison ┘  (single merged stretch)
+│       ├─ <OpponentScouting/>      pre-match dossier add-on → flow
+│       └─ <FinalCta/>              "Turn footage into wins." → flow
+│
+├─ app/product/page.tsx  /product  PRODUCT (server composition)
+│   └─ <main>
+│       ├─ <ProductHero/>  ("use client") #top, short intro; "Try a free game" → flow,
+│       │                                 cross-links to /pricing
+│       ├─ <div id="report">                ◀── nav "Report" target (scroll-mt-24)
+│       │   ├─ <ReportBento defaultSport="tennis"/>  ("use client"), opens on TENNIS
+│       │   │    ├─ <SportToggle/>   WAI-ARIA radiogroup, 5 sports, layoutId pill
+│       │   │    └─ 6-col bento grid of <BentoTile/> (each body keyed on `sport`)
+│       │   │         ├─ HERO spatial → PitchBackground + (SprayChart│Heatmap│TrajectoryLines)
+│       │   │         ├─ Headline     → StatTiles (first 4 metrics)
+│       │   │         ├─ Zone control → PitchBackground + ZoneCoverage
+│       │   │         ├─ Trajectories → PitchBackground + TrajectoryLines
+│       │   │         ├─ Form trend   → TrendChart   ◀── the ONLY Recharts surface
+│       │   │         └─ Advanced     → MetricTable (full metric set)
+│       │   └─ <WhatsInReport/>      Performance/Patterns/Progress pillars
+│       └─ <FreeSampleCta/>  ("use client") #free-game, "Unlock a free game" → flow
+│
+└─ app/pricing/page.tsx  /pricing  PRICING (server composition)
+    └─ <main>
+        ├─ PricingHero()              #top, short inline header (server)
+        ├─ <Pricing/>                 #pricing, token packs + Leagues & Federations;
+        │                             every Unlock CTA → flow (lib/pricing.ts)
+        ├─ <BilingualStrip/>          bilingual capability badge
+        └─ <Faq/>                     #faq, accessible accordion
 ```
 
 `ThemeProvider` (theme) and `FreemiumFlowProvider` (funnel open-state) are the
-two app-wide contexts. Every "Start Free / Unlock / Turn footage into wins" CTA
-across `SiteNav`, `Hero`, `Pricing` and `FinalCta` resolves the **same** flow via
-`useFreemiumTrigger()`, no `onStart` prop-drilling. `ReportBento` owns only its
-local `sport` state; the funnel owns its step state.
+two app-wide contexts, both established once in the layout so they span every
+route. Every "Start Free / Unlock / Try a free game" CTA across `SiteNav`,
+`Hero`, `ProductHero`, `FreeSampleCta`, `Pricing`, `OpponentScouting` and
+`FinalCta` resolves the **same** flow via `useFreemiumTrigger()`, no `onStart`
+prop-drilling. `ReportBento` owns only its local `sport` state; the funnel owns
+its step state. The three page files are plain server compositions; the
+`'use client'` boundary lives in `AppProviders` and in the individual interactive
+sections.
 
 ---
 
@@ -149,7 +160,7 @@ lib/types.ts                     ← the single source of truth (contracts)
    │   MetricRow, TrendSeries, FreeGame, SportMeta, SportKey, PitchType, Outcome
    ▼
 lib/sports/*.ts                  ← per-sport adapters (mock fixtures)
-   │   baseball / afl / basketball / tennis / soccer each `export default SportData`
+   │   baseball / americanfootball / basketball / tennis / soccer each `export default SportData`
    │   lib/sports/index.ts exposes:
    │     • SPORTS: SportMeta[]              (ordered list for nav/toggle/grid)
    │     • getSportData(key): SportData     (Record-backed registry lookup)
@@ -176,7 +187,7 @@ Field-to-primitive mapping (driven by `SportData.spatialKind`):
 | ------------- | --------------- | ------------------------------------ |
 | `spray`       | baseball, tennis| `SprayChart mode="spray"`            |
 | `shot`        | basketball      | `SprayChart mode="shot"`             |
-| `heatmap`     | afl             | `Heatmap`                            |
+| `heatmap`     | americanfootball| `Heatmap`                            |
 | `passmap`     | soccer          | `TrajectoryLines animate`            |
 
 ---
@@ -300,7 +311,9 @@ freemium dashboard renders the correct spatial layer per sport too.
 | Module                         | Boundary        | Why                                            |
 | ------------------------------ | --------------- | ---------------------------------------------- |
 | `app/layout.tsx`               | Server          | font loading, metadata, `data-theme="court"`   |
-| `app/page.tsx`                 | **Client**      | composition shell under `<FreemiumFlowProvider>`|
+| `app/page.tsx` `/product` `/pricing` | Server    | plain section compositions (no hooks of their own) |
+| `components/AppProviders.tsx`  | **Client**      | shared shell: mounts the funnel + SiteNav/SiteFooter on every route |
+| `components/product/*`         | Client          | ProductHero + FreeSampleCta (funnel CTAs)      |
 | `components/landing/*`         | Client          | section UI + scroll/in-view + framer-motion     |
 | `FreemiumFlowProvider`         | Client          | app-wide funnel open-state via `useFreemiumTrigger()` |
 | `ThemeProvider/ThemeSwitcher`  | Client          | context + localStorage + DOM attribute         |
@@ -319,7 +332,8 @@ freemium dashboard renders the correct spatial layer per sport too.
 `tailwindcss@3.4.17`, `d3@7.9.0` (+ `@types/d3@7.4.3`), `recharts@2.15.4`,
 `framer-motion@11.18.2`, `clsx@2.1.1`, `lucide-react@0.469.0`.
 
-**Verified:** `npm run type-check` (tsc --noEmit, exit 0, zero errors),
-`npm run lint` (no warnings or errors), and `npm run build` (compiled
-successfully, `/` prerendered static at ~193 kB, all 4 routes generated) all pass
-green with the full landing page assembled and Court Vision as the default theme.
+**Verified:** `npm run type-check` (tsc --noEmit, exit 0, zero errors) and
+`npm run build` (compiled successfully) pass green. The build prerenders all
+three marketing routes as static content: `/` (Home), `/product` (Product
+showcase) and `/pricing` (Pricing), plus `/_not-found`, with Court Vision as the
+default theme.

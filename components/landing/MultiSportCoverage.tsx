@@ -7,7 +7,7 @@
 // PitchBackground from components/viz, a signature metric pulled live from
 // getSportData(), and a chalk-line "play arc" that draws on (framer-motion
 // pathLength) as the card enters view, like a coach sketching the winning play
-// onto the surface. Baseball/softball and AFL stay available as smaller
+// onto the surface. Baseball/softball and American Football stay available as smaller
 // "also covered" tiles below the featured three.
 //
 // All color/typography comes from the var(--color-*) / var(--font-*) tokens, so
@@ -35,7 +35,7 @@ const SIGNATURE_LABEL: Record<SportKey, string> = {
   soccer: 'xG',
   basketball: 'PTS',
   baseball: 'AVG',
-  afl: 'Disposals',
+  americanfootball: 'Pass yds',
 };
 
 // A short human framing for the signature metric, what the card is "drawing".
@@ -44,7 +44,7 @@ const SIGNATURE_CAPTION: Record<SportKey, string> = {
   soccer: 'xG shot maps & pass networks',
   basketball: 'Shot charts & true-shooting',
   baseball: 'Spray charts & exit velocity',
-  afl: 'Contested possession & zones',
+  americanfootball: 'Passing charts & field position',
 };
 
 function signatureMetric(key: SportKey): MetricRow {
@@ -69,8 +69,8 @@ const PLAY_ARC: Record<SportKey, [number, number][]> = {
   basketball: [[0.86, 0.5], [0.62, 0.28], [0.5, 0.12]],
   // Pulled line drive into the left-field gap.
   baseball: [[0.5, 0.86], [0.36, 0.6], [0.24, 0.36]],
-  // Centre clearance forward to the goal square.
-  afl: [[0.5, 0.5], [0.5, 0.34], [0.5, 0.2]],
+  // Drop back, then a deep strike from midfield into the opponent red zone.
+  americanfootball: [[0.5, 0.66], [0.5, 0.5], [0.56, 0.3], [0.5, 0.12]],
 };
 
 // ---------------------------------------------------------------------------
@@ -124,7 +124,7 @@ export default function MultiSportCoverage({ className }: MultiSportCoverageProp
           </h2>
           <p className="mx-auto mt-4 max-w-xl font-body text-base leading-relaxed text-muted">
             Tennis, soccer and basketball lead everything we do, tagged deepest,
-            shipped fastest. Baseball/softball and Australian football round out
+            shipped fastest. Baseball/softball and American Football round out
             the roster.
           </p>
         </header>

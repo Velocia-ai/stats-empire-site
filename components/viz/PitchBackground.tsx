@@ -31,7 +31,7 @@ export interface PitchBackgroundProps {
 
 const PITCH_LABELS: Record<PitchType, string> = {
   'baseball-diamond': 'Baseball diamond',
-  'afl-oval': 'Australian football oval',
+  'football-field': 'American football field',
   'basketball-halfcourt': 'Basketball half-court',
   'tennis-court': 'Tennis court',
   'soccer-pitch': 'Soccer pitch',
@@ -80,8 +80,8 @@ function renderField(pitch: PitchType, w: number, h: number, uid: string) {
   switch (pitch) {
     case 'baseball-diamond':
       return <BaseballField w={w} h={h} uid={uid} />;
-    case 'afl-oval':
-      return <AflField w={w} h={h} uid={uid} />;
+    case 'football-field':
+      return <FootballField w={w} h={h} uid={uid} />;
     case 'basketball-halfcourt':
       return <BasketballField w={w} h={h} uid={uid} />;
     case 'tennis-court':
@@ -200,80 +200,109 @@ function BaseballField({ w, h, uid }: FieldProps) {
 }
 
 // ---------------------------------------------------------------------------
-// AFL: a true oval filling the frame, centre square + centre circle, two 50m
-// arcs (top & bottom), and 4 goal/behind posts at each end. Attacks vertically.
+// American football: a gridiron seen lengthwise in the 600x1000 portrait
+// viewBox. Two end zones (top = opponent, bottom = own, subtly shaded), the
+// 100-yard field of play between them, a yard line every 10 yards across, the
+// two inboard hash-mark columns (a short tick every yard), the 50-yard line as
+// the accent hero with a midfield ring, crisp sideline boundaries, and a goal
+// post standing on each END LINE (the back of each end zone, where real posts
+// sit). Attacks vertically: own end zone bottom, opponent end zone top (matches
+// the football-field data convention).
 // ---------------------------------------------------------------------------
-function AflField({ w, h, uid }: FieldProps) {
+function FootballField({ w, h, uid }: FieldProps) {
+  const left = w * 0.08; // sideline margin so markings sit inside the frame
+  const right = w * 0.92;
+  const fieldW = right - left;
   const cx = w / 2;
-  const cy = h / 2;
-  // Leave a margin top & bottom so the goal posts (which poke OUTSIDE the goal
-  // line) render inside the viewBox instead of being clipped.
-  const rx = w * 0.46;
-  const ry = h * 0.42;
-  const sq = w * 0.1; // half the centre square (real square ≈ 50m on a ~165m ground)
-  const innerR = w * 0.055; // centre circle (outer of the two real circles)
-  const innerR2 = w * 0.03;
 
-  // 50m arcs sit a fixed distance in front of each goal line, bowing toward the
-  // centre. Drawn as a quadratic curve whose endpoints sit near the goal line.
-  const goalTopY = cy - ry;
-  const goalBottomY = cy + ry;
-  const arcHalfW = rx * 0.62; // half-width of each 50m arc's chord
-  const arcDepth = ry * 0.3; // how far the arc bows in from the goal line
+  // Vertical layout: two end zones top & bottom, 100 yards of play between.
+  const topGoal = h * 0.16; // opponent goal line (top of the field of play)
+  const bottomGoal = h * 0.84; // own goal line (bottom of the field of play)
+  const playH = bottomGoal - topGoal;
+  const ezDepth = h * 0.1; // end-zone band depth (each end zone)
+  const topEnd = topGoal - ezDepth; // opponent end line (back of top end zone)
+  const bottomEnd = bottomGoal + ezDepth; // own end line (back of bottom end zone)
 
-  // Post spacing: 4 posts (2 tall goal, 2 shorter behind) straddling the goal
-  // mouth. Posts poke OUTWARD from the goal line (behind the goal).
-  const goalGap = w * 0.05; // between the two inner goal posts
-  const behindGap = w * 0.135; // between the two outer behind posts
-  const goalPostLen = h * 0.075;
-  const behindPostLen = h * 0.055;
+  // 10-yard lines: 9 interior lines split the field into ten 10-yard bands.
+  const yardLines = Array.from({ length: 9 }, (_, i) => topGoal + (playH * (i + 1)) / 10);
+  // The 50-yard line is the centre line (i === 4 in the loop above).
+  const midY = topGoal + playH / 2;
 
-  const posts = (yLine: number, dir: 1 | -1) => {
-    const xs = [-behindGap, -goalGap, goalGap, behindGap].map((d) => cx + d);
-    return xs.map((x, i) => {
-      const isGoal = i === 1 || i === 2;
-      const len = isGoal ? goalPostLen : behindPostLen;
-      return (
-        <line
-          key={i}
-          x1={x}
-          y1={yLine}
-          x2={x}
-          y2={yLine - dir * len}
-          stroke={isGoal ? ACCENT : LINE_STRONG}
-          strokeWidth={isGoal ? 5 : 3}
-          strokeOpacity={isGoal ? 1 : 0.9}
-          strokeLinecap="round"
-        />
-      );
-    });
-  };
+  // Two hash-mark columns sit inboard of the numbers, NFL-ish spacing.
+  const hashLeft = left + fieldW * 0.36;
+  const hashRight = left + fieldW * 0.64;
+  const hashHalf = fieldW * 0.012; // half-length of each little hash tick
+
+  // Yard ticks: a hash every yard (so 9 between each 10-yard line) in both columns.
+  const hashRows = Array.from({ length: 99 }, (_, i) => topGoal + (playH * (i + 1)) / 100);
+
+  // Goal post: a "tuning fork" standing on each end line, uprights pointing away
+  // from the field of play (top post points up, bottom post points down). The
+  // accent2 hero element of the gridiron.
+  const postHalf = fieldW * 0.07; // half-width between the two uprights
+  const postLen = h * 0.045;
+  const goalPost = (yLine: number, dir: 1 | -1) => (
+    <g stroke={ACCENT} strokeWidth={4.5} strokeLinecap="round" strokeOpacity={1}>
+      {/* Crossbar */}
+      <line x1={cx - postHalf} y1={yLine} x2={cx + postHalf} y2={yLine} />
+      {/* Uprights */}
+      <line x1={cx - postHalf} y1={yLine} x2={cx - postHalf} y2={yLine + dir * postLen} />
+      <line x1={cx + postHalf} y1={yLine} x2={cx + postHalf} y2={yLine + dir * postLen} />
+    </g>
+  );
 
   return (
     <g fill="none" strokeLinecap="round">
-      {/* Turf oval + boundary line. */}
-      <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill={`url(#${uid}-turf)`} stroke={LINE_STRONG} strokeWidth={W_BOUNDARY} />
-      {/* Centre square. */}
-      <rect x={cx - sq} y={cy - sq} width={sq * 2} height={sq * 2} stroke={LINE_STRONG} strokeWidth={W_KEY} />
-      {/* Centre circle (double) + centre line. */}
-      <circle cx={cx} cy={cy} r={innerR} stroke={LINE_STRONG} strokeWidth={W_HAIR} />
-      <circle cx={cx} cy={cy} r={innerR2} stroke={LINE_STRONG} strokeWidth={W_KEY} />
-      <line x1={cx - innerR} y1={cy} x2={cx + innerR} y2={cy} stroke={LINE_STRONG} strokeWidth={W_HAIR} />
-      {/* 50m arc, forward (top) end. Endpoints on the goal line, bowing inward. */}
-      <path
-        d={`M ${cx - arcHalfW} ${goalTopY + ry * 0.05} Q ${cx} ${goalTopY + arcDepth} ${cx + arcHalfW} ${goalTopY + ry * 0.05}`}
+      {/* Playing surface: full field incl. both end zones, framed by the sideline
+          + end-line boundary. */}
+      <rect
+        x={left}
+        y={topEnd}
+        width={fieldW}
+        height={bottomEnd - topEnd}
+        fill={`url(#${uid}-turf)`}
         stroke={LINE_STRONG}
-        strokeWidth={W_KEY}
+        strokeWidth={W_BOUNDARY}
       />
-      {/* 50m arc, back (bottom) end. */}
-      <path
-        d={`M ${cx - arcHalfW} ${goalBottomY - ry * 0.05} Q ${cx} ${goalBottomY - arcDepth} ${cx + arcHalfW} ${goalBottomY - ry * 0.05}`}
-        stroke={LINE_STRONG}
-        strokeWidth={W_KEY}
-      />
-      {/* Goal/behind posts at both ends (top is the attacking end → accent). */}
-      {posts(goalTopY, 1)}
-      {posts(goalBottomY, -1)}
+      {/* End-zone shading (opponent top, own bottom), subtly lifted off the turf. */}
+      <rect x={left} y={topEnd} width={fieldW} height={ezDepth} fill={SURFACE_ALT} stroke="none" />
+      <rect x={left} y={bottomGoal} width={fieldW} height={ezDepth} fill={SURFACE_ALT} stroke="none" />
+      {/* Goal lines (top & bottom of the field of play), heavier so the end zones
+          read as distinct from the 100 yards of play. */}
+      <line x1={left} y1={topGoal} x2={right} y2={topGoal} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      <line x1={left} y1={bottomGoal} x2={right} y2={bottomGoal} stroke={LINE_STRONG} strokeWidth={W_KEY} />
+      {/* 10-yard lines across the field; the 50 is the accent hero line. */}
+      {yardLines.map((y, i) => (
+        <line
+          key={`yl-${i}`}
+          x1={left}
+          y1={y}
+          x2={right}
+          y2={y}
+          stroke={i === 4 ? ACCENT : LINE_STRONG}
+          strokeWidth={i === 4 ? W_KEY : W_HAIR}
+          strokeOpacity={i === 4 ? 1 : 0.85}
+        />
+      ))}
+      {/* Per-yard hash ticks in the two inboard columns (the centred hash rows). */}
+      {hashRows.map((y, i) => (
+        <g key={`h-${i}`} stroke={LINE} strokeWidth={1.2} strokeOpacity={0.7}>
+          <line x1={hashLeft - hashHalf} y1={y} x2={hashLeft + hashHalf} y2={y} />
+          <line x1={hashRight - hashHalf} y1={y} x2={hashRight + hashHalf} y2={y} />
+        </g>
+      ))}
+      {/* Sideline hash ticks against each sideline. */}
+      {hashRows.map((y, i) => (
+        <g key={`s-${i}`} stroke={LINE} strokeWidth={1.2} strokeOpacity={0.5}>
+          <line x1={left} y1={y} x2={left + hashHalf * 1.4} y2={y} />
+          <line x1={right - hashHalf * 1.4} y1={y} x2={right} y2={y} />
+        </g>
+      ))}
+      {/* Midfield ring on the 50. */}
+      <circle cx={cx} cy={midY} r={fieldW * 0.03} stroke={LINE_STRONG} strokeWidth={W_HAIR} />
+      {/* Goal posts standing on each end line (uprights point out of the field). */}
+      {goalPost(topEnd, -1)}
+      {goalPost(bottomEnd, 1)}
     </g>
   );
 }

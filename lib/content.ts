@@ -134,7 +134,7 @@ export interface Footer {
 export interface ProvenanceStep {
   stage: string;
   /** Who or what owns this stage. */
-  owner: 'AI' | 'Analyst' | 'Senior';
+  owner: 'Client' | 'AI' | 'Analyst' | 'Senior';
   description: string;
 }
 
@@ -256,10 +256,16 @@ export const HOW_IT_WORKS: HowItWorks = {
 
 export const PROVENANCE: Provenance = {
   eyebrow: 'How every report is made',
-  headline: 'Logged by humans. Sharpened by AI. Signed off by a senior.',
+  headline: 'You upload. Humans log. AI sharpens. A senior signs off.',
   subhead:
-    'Every report runs through the same chain of custody, so you always know exactly how the numbers were made and who stands behind them.',
+    'Every report runs through the same chain of custody, starting with your footage, so you always know exactly how the numbers were made and who stands behind them.',
   steps: [
+    {
+      stage: 'You upload your match',
+      owner: 'Client',
+      description:
+        'You send us full-match footage from any source, phone, fixed camera or broadcast. One token covers one match, no setup or software for your staff.',
+    },
     {
       stage: 'A human logs the match',
       owner: 'Analyst',
@@ -453,7 +459,7 @@ export const FAQ: Faq = {
     {
       question: 'Which sports do you cover?',
       answer:
-        'Tennis, soccer and basketball lead our coverage and are supported most deeply. Baseball/softball and Australian Football are also available.',
+        'Tennis, soccer and basketball lead our coverage and are supported most deeply. Baseball/softball and American Football are also available.',
     },
     {
       question: 'Do you work with leagues and federations?',
@@ -482,27 +488,27 @@ export const FOOTER: Footer = {
     {
       title: 'Product',
       links: [
-        { label: 'How it works', href: '#provenance' },
-        { label: "What's in a report", href: '#report' },
-        { label: 'Pricing', href: '#pricing' },
-        { label: 'Free sample report', href: '#free-game' },
+        { label: 'How it works', href: '/#provenance' },
+        { label: "What's in a report", href: '/product#report' },
+        { label: 'Pricing', href: '/pricing' },
+        { label: 'Free sample report', href: '/product#free-game' },
       ],
     },
     {
       title: 'Sports',
       links: [
-        { label: 'Tennis', href: '#tennis' },
-        { label: 'Soccer', href: '#soccer' },
-        { label: 'Basketball', href: '#basketball' },
-        { label: 'All sports', href: '#coverage' },
+        { label: 'Tennis', href: '/product#report' },
+        { label: 'Soccer', href: '/product#report' },
+        { label: 'Basketball', href: '/product#report' },
+        { label: 'All sports', href: '/#coverage' },
       ],
     },
     {
       title: 'Company',
       links: [
         { label: 'Partnerships', href: 'mailto:partnerships@statsempire.com' },
-        { label: 'Academy licenses', href: '#pricing' },
-        { label: 'FAQ', href: '#faq' },
+        { label: 'Academy licenses', href: '/pricing' },
+        { label: 'FAQ', href: '/pricing#faq' },
       ],
     },
   ],

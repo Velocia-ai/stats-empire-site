@@ -8,6 +8,7 @@ import {
   JetBrains_Mono,
 } from 'next/font/google';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import AppProviders from '@/components/AppProviders';
 import './globals.css';
 
 // Display / body fonts shared across themes.
@@ -80,10 +81,17 @@ export default function RootLayout({
   // data-theme defaults to 'court' (Court Vision is the brand identity), so the
   // first paint is already on-brand. ThemeProvider updates it on the client
   // after reading localStorage. suppressHydrationWarning guards that swap.
+  //
+  // AppProviders is the shared client shell for EVERY route: it mounts the
+  // app-wide freemium funnel once and renders the SiteNav (with the global
+  // ThemeSwitcher) + SiteFooter around the per-page children, so the "Start
+  // Free" CTA works identically on Home, Product and Pricing.
   return (
     <html lang="en" data-theme="court" className={fontVars} suppressHydrationWarning>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <AppProviders>{children}</AppProviders>
+        </ThemeProvider>
       </body>
     </html>
   );

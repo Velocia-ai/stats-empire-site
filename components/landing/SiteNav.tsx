@@ -2,11 +2,13 @@
 
 // Stats Empire, SiteNav
 //
-// Sticky top navigation for the Court Vision landing page.
-//   • Stats Empire wordmark (chalk-underline accent, links to top).
-//   • Anchor links: How it works · Sports · Report · Pricing · FAQ.
+// Sticky top navigation shown on every route (mounted in app/layout.tsx via
+// <AppProviders>).
+//   • Stats Empire wordmark (chalk-underline accent, links home to /).
+//   • Real-route + anchor links via next/link: Home (/) · Product (/product)
+//     · Pricing (/pricing) · How it works (/#provenance) · FAQ (/pricing#faq).
 //   • Lime "Start Free" CTA, opens the freemium funnel.
-//   • <ThemeSwitcher/> for live theme access.
+//   • <ThemeSwitcher/> for live theme access (the global theme control).
 //   • Mobile burger → slide-down sheet with the same links + CTA.
 //
 // Condenses on scroll: past a threshold the bar tightens (shorter padding,
@@ -45,11 +47,11 @@ export interface SiteNavProps {
 }
 
 const DEFAULT_LINKS: NavLink[] = [
-  { label: 'How it works', href: '#provenance' },
-  { label: 'Sports', href: '#coverage' },
-  { label: 'Report', href: '#report' },
-  { label: 'Pricing', href: '#pricing' },
-  { label: 'FAQ', href: '#faq' },
+  { label: 'Home', href: '/' },
+  { label: 'Product', href: '/product' },
+  { label: 'Pricing', href: '/pricing' },
+  { label: 'How it works', href: '/#provenance' },
+  { label: 'FAQ', href: '/pricing#faq' },
 ];
 
 export default function SiteNav({ onStart, links = DEFAULT_LINKS, className }: SiteNavProps) {
@@ -124,7 +126,7 @@ function SiteNavView({
       >
         {/* Wordmark */}
         <Link
-          href="#top"
+          href="/"
           onClick={() => setMenuOpen(false)}
           className="group inline-flex items-baseline gap-0.5 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent2"
         >
@@ -141,16 +143,16 @@ function SiteNavView({
           </span>
         </Link>
 
-        {/* Desktop links */}
+        {/* Desktop links (real routes + anchors via next/link) */}
         <ul className="hidden items-center gap-1 md:flex">
           {links.map((l) => (
             <li key={l.href}>
-              <a
+              <Link
                 href={l.href}
                 className="rounded-full px-3 py-2 font-mono text-[0.78rem] uppercase tracking-wider text-muted transition-colors hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2"
               >
                 {l.label}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
@@ -199,13 +201,13 @@ function SiteNavView({
               <ul className="flex flex-col">
                 {links.map((l) => (
                   <li key={l.href}>
-                    <a
+                    <Link
                       href={l.href}
                       onClick={() => setMenuOpen(false)}
                       className="block border-b border-border/60 py-3.5 font-mono text-sm uppercase tracking-wider text-muted transition-colors hover:text-text focus-visible:text-text"
                     >
                       {l.label}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>

@@ -5,7 +5,7 @@
 // Shades arbitrary polygon zones by their numeric `value` using a quantized
 // accent ramp, then draws a centred label + value inside each zone and a value
 // legend along the bottom. Serves every sport's zonal read: baseball fielding
-// coverage, AFL forward/mid/back-50, basketball defensive zones, tennis
+// coverage, American football red zone/territory/midfield, basketball defensive zones, tennis
 // deuce/ad/net, soccer thirds. Each zone is a single filled, crisply-bordered
 // polygon so adjacent zones never visually merge (the old version's thin,
 // same-hued borders made neighbouring rectangles look like they overlapped).

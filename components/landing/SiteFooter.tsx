@@ -10,10 +10,17 @@
 // wordmark underline draw-on, guarded by useReducedMotion(). All color/type via
 // var(--color-*) / var(--font-*) tokens.
 
+import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Mail, Globe } from 'lucide-react';
 
 import { FOOTER } from '@/lib/content';
+
+// Internal app routes (and in-route anchors) go through next/link for client
+// navigation; external links (mailto:, http) stay as plain anchors.
+function isInternalHref(href: string): boolean {
+  return href.startsWith('/') || href.startsWith('#');
+}
 
 export interface SiteFooterProps {
   /** Optional extra classes for the outer <footer>. */
@@ -97,16 +104,23 @@ export default function SiteFooter({ className }: SiteFooterProps) {
                   {col.title}
                 </h2>
                 <ul className="mt-4 space-y-2.5" role="list">
-                  {col.links.map((link) => (
-                    <li key={link.label}>
-                      <a
-                        href={link.href}
-                        className="font-body text-sm text-muted transition-colors hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2"
-                      >
-                        {link.label}
-                      </a>
-                    </li>
-                  ))}
+                  {col.links.map((link) => {
+                    const className =
+                      'font-body text-sm text-muted transition-colors hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2';
+                    return (
+                      <li key={link.label}>
+                        {isInternalHref(link.href) ? (
+                          <Link href={link.href} className={className}>
+                            {link.label}
+                          </Link>
+                        ) : (
+                          <a href={link.href} className={className}>
+                            {link.label}
+                          </a>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ))}

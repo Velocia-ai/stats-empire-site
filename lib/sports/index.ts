@@ -4,14 +4,15 @@
 import type { SportData, SportKey, SportMeta } from '@/lib/types';
 
 import baseball from './baseball';
-import afl from './afl';
+import americanfootball from './americanfootball';
 import basketball from './basketball';
 import tennis from './tennis';
 import soccer from './soccer';
 
 // Ordered list for nav, sport pickers, and the home grid.
-// Featured sports (tennis, soccer, basketball) lead; baseball & AFL stay
-// available but secondary. Keep this order in sync with FEATURED_SPORTS below.
+// Featured sports (tennis, soccer, basketball) lead; baseball & American
+// Football stay available but secondary. Keep this order in sync with
+// FEATURED_SPORTS below.
 export const SPORTS: SportMeta[] = [
   {
     key: 'tennis',
@@ -29,14 +30,14 @@ export const SPORTS: SportMeta[] = [
     tagline: 'Shot charts, true-shooting efficiency & drive trajectories.',
   },
   {
+    key: 'americanfootball',
+    name: 'American Football',
+    tagline: 'Passing charts, field-position heat & red-zone efficiency.',
+  },
+  {
     key: 'baseball',
     name: 'Baseball / Softball',
     tagline: 'Spray charts, strike-zone heat & exit-velo analytics.',
-  },
-  {
-    key: 'afl',
-    name: 'Australian Football',
-    tagline: 'Contested possession, disposal maps & zone coverage on the oval.',
   },
 ];
 
@@ -47,7 +48,7 @@ export const FEATURED_SPORTS: SportKey[] = ['tennis', 'soccer', 'basketball'];
 // Registry map, keep keys in sync with SportKey.
 const REGISTRY: Record<SportKey, SportData> = {
   baseball,
-  afl,
+  americanfootball,
   basketball,
   tennis,
   soccer,
@@ -57,4 +58,4 @@ export function getSportData(key: SportKey): SportData {
   return REGISTRY[key];
 }
 
-export { baseball, afl, basketball, tennis, soccer };
+export { baseball, americanfootball, basketball, tennis, soccer };

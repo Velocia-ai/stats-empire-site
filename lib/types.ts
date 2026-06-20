@@ -4,11 +4,11 @@
 
 export type ThemeKey = 'evolved' | 'court' | 'precision';
 
-export type SportKey = 'baseball' | 'afl' | 'basketball' | 'tennis' | 'soccer';
+export type SportKey = 'baseball' | 'americanfootball' | 'basketball' | 'tennis' | 'soccer';
 
 export type PitchType =
   | 'baseball-diamond'
-  | 'afl-oval'
+  | 'football-field'
   | 'basketball-halfcourt'
   | 'tennis-court'
   | 'soccer-pitch';

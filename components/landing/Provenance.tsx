@@ -3,14 +3,16 @@
 // Stats Empire, Provenance (Feature A)
 //
 // "How every report is made", the chain of custody that makes the hybrid model
-// tangible: AI pre-tags -> a trained analyst logs & corrects -> a senior analyst
-// audits & signs off. Rendered as three numbered stages joined by a chalk
-// trajectory that draws itself on scroll, the same coach-sketching-a-play motif
-// the rest of the suite uses (HowItWorks / WhyUs).
+// tangible: you upload the match -> a trained analyst logs & corrects -> AI
+// sharpens quality control -> a senior analyst audits & signs off. Rendered as
+// numbered stages joined by a chalk trajectory that draws itself on scroll, the
+// same coach-sketching-a-play motif the rest of the suite uses (HowItWorks /
+// WhyUs).
 //
-// Each stage carries an owner pill (AI / Analyst / Senior). AI reads cool
-// (accent2 / orange), the human stages read warm and confident (accent1 / lime),
-// because the human has the final say. The compact PROVENANCE.badge
+// Each stage carries an owner pill (Client / AI / Analyst / Senior). The client
+// upload and AI read cool (accent2 / orange), the human stages read warm and
+// confident (accent1 / lime), because the human has the final say. The compact
+// PROVENANCE.badge
 // ("Human-verified / Senior-audited") is also exported on its own as
 // <ProvenanceBadge /> so it can sit near the hero or the report.
 //
@@ -19,7 +21,7 @@
 
 import { useRef } from 'react';
 import { motion, useInView, useReducedMotion } from 'framer-motion';
-import { Cpu, UserCheck, ShieldCheck, BadgeCheck } from 'lucide-react';
+import { Upload, Cpu, UserCheck, ShieldCheck, BadgeCheck } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import clsx from 'clsx';
 import { PROVENANCE } from '@/lib/content';
@@ -34,12 +36,14 @@ export interface ProvenanceProps {
   className?: string;
 }
 
-// Per-owner visual treatment. AI is the cool assist; the two human stages are
-// the warm, confident accent1 the rest of the site uses for "human-led".
+// Per-owner visual treatment. The Client upload and AI are the cool input/assist
+// stages; the two human stages are the warm, confident accent1 the rest of the
+// site uses for "human-led".
 const OWNER_META: Record<
   ProvenanceStep['owner'],
   { icon: LucideIcon; tone: 'cool' | 'warm' }
 > = {
+  Client: { icon: Upload, tone: 'cool' },
   AI: { icon: Cpu, tone: 'cool' },
   Analyst: { icon: UserCheck, tone: 'warm' },
   Senior: { icon: ShieldCheck, tone: 'warm' },
@@ -113,7 +117,7 @@ export default function Provenance({
         </header>
 
         <div ref={ref} className="relative mt-16">
-          {/* Desktop chalk trajectory threading the three stages, left to right. */}
+          {/* Desktop chalk trajectory threading the stages, left to right. */}
           <svg
             aria-hidden="true"
             viewBox="0 0 1000 60"
@@ -144,7 +148,7 @@ export default function Provenance({
             />
           </svg>
 
-          <ol className="relative grid grid-cols-1 gap-x-8 gap-y-10 md:grid-cols-3">
+          <ol className="relative grid grid-cols-1 gap-x-8 gap-y-10 md:grid-cols-2 lg:grid-cols-4">
             {/* Mobile chalk rail running down the left of the stages. */}
             <svg
               aria-hidden="true"
@@ -203,7 +207,7 @@ export default function Provenance({
                   </div>
 
                   <div className="pt-0.5 md:pt-2">
-                    {/* Owner pill: AI = cool, Analyst/Senior = warm. */}
+                    {/* Owner pill: Client/AI = cool, Analyst/Senior = warm. */}
                     <span
                       className={clsx(
                         'inline-flex w-fit items-center rounded-full px-2.5 py-1 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.16em]',
@@ -212,7 +216,9 @@ export default function Provenance({
                           : 'bg-accent1/15 text-accent1',
                       )}
                     >
-                      {step.owner === 'AI'
+                      {step.owner === 'Client'
+                        ? 'You'
+                        : step.owner === 'AI'
                         ? 'AI assist'
                         : step.owner === 'Senior'
                         ? 'Senior analyst'

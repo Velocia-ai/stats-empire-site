@@ -34,7 +34,7 @@ export interface SportSelectorProps {
 // Per-sport icon + a short "what you'll see" hook to telegraph the depth.
 const SPORT_ICONS: Record<SportKey, LucideIcon> = {
   baseball: CircleDot,
-  afl: Trophy,
+  americanfootball: Trophy,
   basketball: Dribbble,
   tennis: Volleyball,
   soccer: Target,

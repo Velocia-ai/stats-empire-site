@@ -27,7 +27,7 @@ export interface SportToggleProps {
 /** Short labels keep the segmented control compact on small screens. */
 const SHORT_LABEL: Record<SportKey, string> = {
   baseball: 'Baseball',
-  afl: 'AFL',
+  americanfootball: 'Football',
   basketball: 'Basketball',
   tennis: 'Tennis',
   soccer: 'Soccer',
