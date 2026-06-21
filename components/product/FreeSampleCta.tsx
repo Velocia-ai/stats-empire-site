@@ -14,6 +14,7 @@
 import { ArrowRight, Sparkles } from 'lucide-react';
 
 import { useFreemiumTrigger } from '@/components/freemium';
+import Reveal from '@/components/Reveal';
 
 export interface FreeSampleCtaProps {
   /** Optional extra classes for the outer <section>. */
@@ -28,26 +29,26 @@ export default function FreeSampleCta({ className }: FreeSampleCtaProps) {
       id="free-game"
       aria-labelledby="free-sample-heading"
       className={[
-        'relative w-full px-5 py-16 sm:px-8 sm:py-24',
+        'relative w-full px-5 py-16 sm:px-8 sm:py-28 lg:py-32',
         className ?? '',
       ].join(' ')}
     >
-      <div className="relative mx-auto max-w-4xl overflow-hidden rounded-3xl border border-accent1/30 bg-surface/60 px-6 py-12 text-center backdrop-blur sm:px-12 sm:py-16">
-        <div aria-hidden className="pointer-events-none absolute inset-0 grid-texture-fine" />
+      <Reveal className="relative mx-auto max-w-4xl overflow-hidden rounded-3xl border border-accent1/30 bg-surface/60 px-6 py-14 text-center backdrop-blur sm:px-12 sm:py-16">
+        {/* The one calm atmospheric spot for this card: a single soft lime glow. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute left-1/2 top-0 h-48 w-[26rem] max-w-full -translate-x-1/2 rounded-full bg-accent1/10 blur-3xl"
+          className="pointer-events-none absolute left-1/2 top-0 h-48 w-[26rem] max-w-full -translate-x-1/2 rounded-full bg-accent1/[0.06] blur-3xl"
         />
 
         <div className="relative z-10 flex flex-col items-center gap-5">
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-bg/60 px-4 py-1.5 font-mono text-[0.7rem] uppercase tracking-[0.3em] text-accent1 backdrop-blur">
+          <span className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-border bg-bg/60 px-4 font-mono text-[0.7rem] uppercase tracking-[0.3em] text-accent1 backdrop-blur">
             <Sparkles className="h-3.5 w-3.5" aria-hidden />
             100% free, no card
           </span>
 
           <h2
             id="free-sample-heading"
-            className="font-display text-3xl font-bold leading-[1.08] tracking-tight text-text sm:text-4xl"
+            className="font-display font-bold leading-[1.1] tracking-tight text-text text-[clamp(1.75rem,5vw,2.5rem)]"
           >
             Try a real match, fully analyzed, free.
           </h2>
@@ -61,13 +62,13 @@ export default function FreeSampleCta({ className }: FreeSampleCtaProps) {
           <button
             type="button"
             onClick={open}
-            className="group inline-flex items-center justify-center gap-2 rounded-full bg-accent1 px-7 py-3.5 font-mono text-sm font-semibold uppercase tracking-wider text-bg transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2"
+            className="group mt-1 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-accent1 px-7 py-3.5 font-mono text-sm font-semibold uppercase tracking-wider text-bg transition-colors hover:bg-accent1/90"
           >
             Unlock a free game
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+            <ArrowRight className="h-4 w-4" aria-hidden />
           </button>
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }

@@ -30,11 +30,12 @@ export default function ProductPage() {
       <ProductHero />
 
       {/* The live coach-ready report (opens on Tennis) with its three pillars
-          folded directly underneath, so "what's in a report" reads as one
-          continuous section. Nav "Report" target. */}
+          underneath. Each section carries its own consistent vertical rhythm,
+          so the two read as a calm pair with room to breathe between them.
+          Nav "Report" target. */}
       <div id="report" className="scroll-mt-24">
-        <ReportBento defaultSport="tennis" className="pb-4 sm:pb-6" />
-        <WhatsInReport className="pt-4 sm:pt-6" />
+        <ReportBento defaultSport="tennis" className="pb-0" />
+        <WhatsInReport className="pt-0" />
       </div>
 
       {/* Closing free-sample CTA (#free-game), opens the freemium funnel. */}

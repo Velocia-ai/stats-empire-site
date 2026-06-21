@@ -2,14 +2,16 @@
 
 // Stats Empire, ProofStats
 //
-// A punchy proof strip that sits directly under the hero. Each stat's numeral
-// counts up from zero when it scrolls into view, then a chalk underline draws
-// itself across the figure, the Court Vision "coach drawing on the board"
-// signature. Numerals are tabular-nums + mono so they don't jitter mid-count.
+// A calm proof strip that sits directly under the hero. Each stat's numeral
+// counts up gently from zero when it scrolls into view. Numerals are
+// tabular-nums so they don't jitter mid-count.
+//
+// Refined for restraint: no grid-texture, no per-stat chalk underline, and no
+// hard cell dividers, whitespace separates the figures instead. The cells
+// enter with the shared <Reveal> primitive (subtle, capped stagger).
 //
 // Reduced-motion safe: when the user prefers reduced motion we skip the count
-// and render the final value immediately, and the chalk underline is shown
-// static (no draw-on).
+// and render the final value immediately (Reveal also settles statically).
 
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -21,7 +23,7 @@ import {
 import clsx from 'clsx';
 import { PROOF_STATS } from '@/lib/content';
 import type { ProofStat } from '@/lib/content';
-import { ChalkUnderline } from './ChalkLines';
+import Reveal from '@/components/Reveal';
 
 interface ProofStatsProps {
   /** Optional override; defaults to the canonical PROOF_STATS copy. */
@@ -64,7 +66,7 @@ function CountUp({
     }
     if (!active) return;
     const controls = animate(mv, target, {
-      duration: 1.4,
+      duration: 1.0,
       ease: [0.16, 1, 0.3, 1],
       onUpdate: (v) => setDisplay(v),
     });
@@ -98,43 +100,27 @@ export default function ProofStats({ stats = PROOF_STATS, className }: ProofStat
   return (
     <section
       aria-label="Proof in numbers"
-      className={clsx('relative w-full border-y border-border bg-surface/40', className)}
+      className={clsx('relative w-full border-t border-border/60', className)}
     >
-      {/* faint tactics-board grid behind the figures */}
-      <div aria-hidden="true" className="grid-texture pointer-events-none absolute inset-0" />
-
       <div
         ref={ref}
-        className="relative mx-auto grid max-w-6xl grid-cols-2 gap-px overflow-hidden lg:grid-cols-4"
+        className="mx-auto grid max-w-6xl grid-cols-2 gap-x-8 gap-y-12 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-4 lg:gap-x-12"
       >
         {stats.map((stat, idx) => (
-          <div
+          <Reveal
             key={stat.label}
-            className={clsx(
-              'group relative flex flex-col gap-2 px-5 py-8 sm:px-7 sm:py-10',
-              // chalk dividers between cells, themed via border color
-              'before:absolute before:inset-y-6 before:left-0 before:w-px before:bg-border',
-              idx % 2 === 0 && 'before:hidden sm:before:block',
-              'lg:before:block',
-              idx === 0 && 'lg:before:hidden',
-            )}
+            index={idx}
+            className="flex flex-col gap-2"
           >
-            <div className="relative inline-flex flex-col">
-              <span className="font-display text-4xl font-bold leading-none text-text sm:text-5xl">
-                <span className="sr-only">{stat.value}</span>
-                <CountUp value={stat.value} active={active} />
-              </span>
-
-              {/* chalk underline draws on after the count settles */}
-              <span className="mt-2 block w-full max-w-[5.5rem]">
-                <ChalkUnderline delay={0.5 + idx * 0.08} />
-              </span>
-            </div>
+            <span className="font-display text-4xl font-bold leading-none text-text sm:text-5xl">
+              <span className="sr-only">{stat.value}</span>
+              <CountUp value={stat.value} active={active} />
+            </span>
 
             <p className="font-mono text-xs leading-relaxed text-muted sm:text-[0.8rem]">
               {stat.label}
             </p>
-          </div>
+          </Reveal>
         ))}
       </div>
     </section>

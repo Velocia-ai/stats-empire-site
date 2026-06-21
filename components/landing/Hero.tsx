@@ -37,6 +37,7 @@ import { FEATURED_SPORTS, SPORTS, getSportData } from '@/lib/sports';
 import type { SportKey } from '@/lib/types';
 import { PitchBackground, TrajectoryLines } from '@/components/viz';
 import { useFreemiumTrigger } from '@/components/freemium';
+import Reveal from '@/components/Reveal';
 import CourtBackdrop from './CourtBackdrop';
 import { ProvenanceBadge } from './Provenance';
 
@@ -118,48 +119,58 @@ function HeroView({
         className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-b from-transparent to-bg"
       />
 
-      <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 pb-20 pt-28 sm:px-6 sm:pt-32 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12 lg:px-8 lg:pb-28 lg:pt-36">
+      <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-16 pt-28 sm:px-8 sm:pt-32 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:pb-28 lg:pt-36">
         {/* ---- Copy column ------------------------------------------------ */}
-        <div className="flex flex-col items-start gap-6 text-left">
-          <span className="inline-flex items-center gap-2 rounded-full border border-accent1/30 bg-surface/60 px-4 py-1.5 font-mono text-[0.7rem] uppercase tracking-[0.28em] text-accent1 backdrop-blur">
+        <div className="flex flex-col items-start gap-7 text-left">
+          <Reveal index={0} className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 px-4 py-1.5 font-mono text-[0.7rem] uppercase tracking-[0.28em] text-muted backdrop-blur">
             <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-accent1" />
             {HERO.eyebrow}
-          </span>
+          </Reveal>
 
-          <h1 className="font-display text-4xl font-extrabold leading-[1.02] tracking-tight text-text sm:text-5xl lg:text-6xl">
+          <Reveal
+            as="h1"
+            index={1}
+            className="font-display font-extrabold leading-[1.04] tracking-tight text-text [font-size:clamp(2.25rem,6vw,3.75rem)]"
+          >
             {HERO.headline}
-          </h1>
+          </Reveal>
 
-          <p className="max-w-xl font-body text-base leading-relaxed text-muted sm:text-lg">
+          <Reveal
+            as="p"
+            index={2}
+            className="max-w-xl font-body text-base leading-relaxed text-muted sm:text-lg"
+          >
             {HERO.subhead}
-          </p>
+          </Reveal>
 
           {/* Hybrid trust badge: human-verified, senior-audited. */}
-          <ProvenanceBadge className="backdrop-blur" />
+          <Reveal index={3}>
+            <ProvenanceBadge className="backdrop-blur" />
+          </Reveal>
 
           {/* Dual CTA */}
-          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+          <Reveal index={4} className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
             <button
               type="button"
               onClick={onStart}
-              className="group inline-flex items-center justify-center gap-2 rounded-full bg-accent1 px-7 py-3.5 font-mono text-sm font-semibold uppercase tracking-wider text-bg shadow-[0_0_0_0_rgba(0,0,0,0)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2"
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-accent1 px-7 py-3.5 font-mono text-sm font-semibold uppercase tracking-wider text-bg transition-colors hover:bg-accent1/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent1"
             >
               <Zap className="h-4 w-4" aria-hidden />
               Start free, no card
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+              <ArrowRight className="h-4 w-4" aria-hidden />
             </button>
 
             <a
               href={sampleHref}
-              className="group inline-flex items-center justify-center gap-2 rounded-full border border-border bg-surface/40 px-7 py-3.5 font-mono text-sm font-semibold uppercase tracking-wider text-text backdrop-blur transition-colors hover:border-accent2/60 hover:bg-surfaceAlt focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2"
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-border bg-surface/40 px-7 py-3.5 font-mono text-sm font-semibold uppercase tracking-wider text-text backdrop-blur transition-colors hover:border-muted hover:bg-surfaceAlt focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent1"
             >
-              <FileText className="h-4 w-4 text-accent2" aria-hidden />
+              <FileText className="h-4 w-4 text-muted" aria-hidden />
               See a sample report
             </a>
-          </div>
+          </Reveal>
 
           {/* Featured-sport chips (lead with Tennis/Soccer/Basketball) */}
-          <div className="flex flex-col gap-2">
+          <Reveal index={5} className="flex flex-col gap-2.5">
             <span className="font-mono text-[0.65rem] uppercase tracking-[0.25em] text-muted">
               Featured coverage
             </span>
@@ -173,10 +184,10 @@ function HeroView({
                     onClick={() => select(key)}
                     aria-pressed={isActive}
                     className={[
-                      'rounded-full border px-4 py-1.5 font-mono text-xs uppercase tracking-wider transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2',
+                      'min-h-[44px] rounded-full border px-4 font-mono text-xs uppercase tracking-wider transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent1',
                       isActive
                         ? 'border-accent1 bg-accent1 text-bg'
-                        : 'border-border bg-surface/40 text-muted hover:border-accent1/50 hover:text-text',
+                        : 'border-border bg-surface/40 text-muted hover:border-muted hover:text-text',
                     ].join(' ')}
                   >
                     {SPORT_NAME.get(key) ?? key}
@@ -184,41 +195,42 @@ function HeroView({
                 );
               })}
             </div>
-          </div>
+          </Reveal>
 
-          {/* Proof stat strip */}
-          <dl className="mt-2 grid w-full grid-cols-2 gap-x-6 gap-y-4 border-t border-border/60 pt-6 sm:grid-cols-4 lg:max-w-xl">
+          {/* Proof stat strip, calm: numerals read as text, not a second lime field. */}
+          <Reveal
+            as="dl"
+            index={6}
+            className="mt-2 grid w-full grid-cols-2 gap-x-6 gap-y-5 border-t border-border/60 pt-7 sm:grid-cols-4 lg:max-w-xl"
+          >
             {PROOF_STATS.map((s) => (
               <div key={s.label} className="flex flex-col gap-1">
-                <dt className="font-display text-2xl font-extrabold tracking-tight text-accent1 sm:text-3xl">
+                <dt className="font-display text-2xl font-extrabold tracking-tight text-text sm:text-3xl">
                   {s.value}
                 </dt>
                 <dd className="font-body text-[0.7rem] leading-snug text-muted">{s.label}</dd>
               </div>
             ))}
-          </dl>
+          </Reveal>
         </div>
 
         {/* ---- Visual column: rotating tactics card ----------------------- */}
-        <div className="relative">
+        <Reveal index={2} className="relative">
           <div className="relative mx-auto w-full max-w-md">
-            {/* Glow halo behind the card */}
+            {/* Soft focal glow behind the card, the one accent glow this view. */}
             <div
               aria-hidden
-              className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-accent1/10 blur-3xl"
+              className="pointer-events-none absolute -inset-8 -z-10 rounded-[2rem] bg-accent1/[0.06] blur-3xl"
             />
 
-            <div className="relative overflow-hidden rounded-3xl border border-border bg-surface/60 p-4 shadow-2xl backdrop-blur-sm sm:p-6">
+            <div className="relative overflow-hidden rounded-3xl border border-border bg-surface/60 p-4 shadow-xl backdrop-blur-sm sm:p-6">
               {/* Card chrome: live label + active sport name */}
               <div className="mb-3 flex items-center justify-between">
                 <span className="inline-flex items-center gap-2 font-mono text-[0.65rem] uppercase tracking-[0.25em] text-muted">
-                  <span
-                    aria-hidden
-                    className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent2"
-                  />
+                  <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-muted" />
                   Live tactics board
                 </span>
-                <span className="font-mono text-[0.65rem] uppercase tracking-[0.25em] text-accent1">
+                <span className="font-mono text-[0.65rem] uppercase tracking-[0.25em] text-muted">
                   {SPORT_NAME.get(active)}
                 </span>
               </div>
@@ -264,7 +276,7 @@ function HeroView({
                       onClick={() => select(key)}
                       aria-label={`Show ${SPORT_NAME.get(key)} tactics`}
                       aria-pressed={isActive}
-                      className="group flex h-6 items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2"
+                      className="group flex h-6 items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent1"
                     >
                       <span
                         aria-hidden
@@ -281,7 +293,7 @@ function HeroView({
               </div>
             </div>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

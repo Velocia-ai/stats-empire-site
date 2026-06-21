@@ -27,20 +27,20 @@ function PricingHero() {
       aria-labelledby="pricing-hero-heading"
       className="relative w-full overflow-hidden px-5 pb-4 pt-28 text-center sm:px-8 sm:pt-32 lg:pt-36"
     >
-      <div aria-hidden className="pointer-events-none absolute inset-0 grid-texture" />
+      {/* One soft atmospheric glow, the single accent on this hero. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-10 h-52 w-[32rem] max-w-full -translate-x-1/2 rounded-full bg-accent1/[0.07] blur-3xl"
+        className="pointer-events-none absolute left-1/2 top-10 h-52 w-[32rem] max-w-full -translate-x-1/2 rounded-full bg-accent1/[0.05] blur-3xl"
       />
 
       <div className="relative mx-auto max-w-3xl">
-        <span className="inline-flex items-center gap-2 rounded-full border border-accent1/30 bg-surface/60 px-4 py-1.5 font-mono text-[0.7rem] uppercase tracking-[0.28em] text-accent1 backdrop-blur">
+        <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 px-4 py-1.5 font-mono text-[0.7rem] uppercase tracking-[0.28em] text-muted backdrop-blur">
           Simple, match-based pricing
         </span>
 
         <h1
           id="pricing-hero-heading"
-          className="mt-6 font-display text-4xl font-extrabold leading-[1.04] tracking-tight text-text sm:text-5xl"
+          className="mt-6 font-display text-[clamp(2rem,6vw,3rem)] font-extrabold leading-[1.04] tracking-tight text-text"
         >
           Pay for the matches you analyze. Nothing else.
         </h1>
@@ -62,12 +62,13 @@ export default function PricingPage() {
       <PricingHero />
 
       {/* Token packs + Leagues & Federations, every Unlock opens the funnel. The
-          bilingual capability badge sits with the offer it ships with. */}
+          bilingual capability badge sits with the offer it ships with, tucked
+          beneath the packs so the two read as one stretch. */}
       <Pricing className="pb-8 pt-8 sm:pb-12 sm:pt-12" />
-      <BilingualStrip className="pb-14 pt-0 sm:pb-20" />
+      <BilingualStrip className="pb-16 pt-0 sm:pb-28 lg:pb-32" />
 
       {/* FAQ owns id="faq" so /pricing#faq lands here. */}
-      <Faq className="py-14 sm:py-20" />
+      <Faq />
     </main>
   );
 }

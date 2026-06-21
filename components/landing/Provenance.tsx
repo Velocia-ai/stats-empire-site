@@ -10,17 +10,22 @@
 // WhyUs).
 //
 // Each stage carries an owner pill (Client / AI / Analyst / Senior). The client
-// upload and AI read cool (accent2 / orange), the human stages read warm and
+// upload and AI read neutral (muted / border), the human stages read warm and
 // confident (accent1 / lime), because the human has the final say. The compact
 // PROVENANCE.badge
 // ("Human-verified / Senior-audited") is also exported on its own as
 // <ProvenanceBadge /> so it can sit near the hero or the report.
 //
-// All colour/type via var(--color-*) tokens. Reduced-motion safe: the path and
-// all content render statically when reduced motion is requested.
+// All colour/type via var(--color-*) tokens. Reduced-motion safe: every stage
+// renders statically (via the shared <Reveal>) when reduced motion is requested.
+//
+// Refined for restraint: the connecting chalk trajectories have been removed
+// (noisy decorative flourishes), and orange is kept out of the marketing
+// chrome, the input stages (Client/AI) read neutral while the two human
+// stages carry the single lime highlight, so lime never competes with orange
+// here. Stages enter with the shared <Reveal> primitive.
 
-import { useRef } from 'react';
-import { motion, useInView, useReducedMotion } from 'framer-motion';
+import Reveal from '@/components/Reveal';
 import { Upload, Cpu, UserCheck, ShieldCheck, BadgeCheck } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import clsx from 'clsx';
@@ -84,25 +89,20 @@ export default function Provenance({
   content = PROVENANCE,
   className,
 }: ProvenanceProps) {
-  const reduce = useReducedMotion();
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-15% 0px -15% 0px' });
-  const show = reduce ? true : inView;
-
   return (
     <section
       id="provenance"
       aria-labelledby="provenance-heading"
-      className={clsx('relative w-full px-5 py-20 sm:px-8 sm:py-28', className)}
+      className={clsx('relative w-full px-5 py-16 sm:px-8 sm:py-28 lg:py-32', className)}
     >
       <div className="mx-auto max-w-6xl">
-        <header className="max-w-2xl">
+        <Reveal as="header" className="mb-12 max-w-2xl sm:mb-16">
           <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-accent1">
             {content.eyebrow}
           </p>
           <h2
             id="provenance-heading"
-            className="mt-4 font-display text-3xl font-bold leading-[1.05] text-text sm:text-4xl md:text-5xl"
+            className="mt-4 font-display font-bold leading-[1.08] text-text [font-size:clamp(1.875rem,4.5vw,3rem)]"
           >
             {content.headline}
           </h2>
@@ -114,128 +114,73 @@ export default function Provenance({
           <div className="mt-6">
             <ProvenanceBadge badge={content.badge} />
           </div>
-        </header>
+        </Reveal>
 
-        <div ref={ref} className="relative mt-16">
-          {/* Desktop chalk trajectory threading the stages, left to right. */}
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 1000 60"
-            preserveAspectRatio="none"
-            className="absolute left-0 top-7 hidden h-14 w-full overflow-visible md:block"
-          >
-            <motion.path
-              d="M60 30 C 260 -8, 380 68, 540 30 S 800 -8, 940 30"
-              fill="none"
-              stroke="var(--color-accent1)"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeDasharray="6 8"
-              initial={reduce ? { pathLength: 1 } : { pathLength: 0 }}
-              animate={show ? { pathLength: 1 } : { pathLength: 0 }}
-              transition={{ duration: 1.5, ease: 'easeInOut' }}
-            />
-            <motion.path
-              d="M920 18 L 942 30 L 920 42"
-              fill="none"
-              stroke="var(--color-accent2)"
-              strokeWidth={2.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              initial={reduce ? { opacity: 1 } : { opacity: 0 }}
-              animate={show ? { opacity: 1 } : { opacity: 0 }}
-              transition={{ duration: 0.3, delay: reduce ? 0 : 1.4 }}
-            />
-          </svg>
+        <ol className="grid grid-cols-1 gap-x-8 gap-y-10 sm:gap-x-8 md:grid-cols-2 lg:grid-cols-4">
+          {content.steps.map((step, idx) => {
+            const meta = OWNER_META[step.owner];
+            const Icon = meta.icon;
+            // Human stages carry the single lime highlight; input stages
+            // (Client/AI) read neutral so lime stays rationed and orange
+            // never enters the marketing chrome.
+            const warm = meta.tone === 'warm';
+            return (
+              <Reveal
+                as="li"
+                key={step.stage}
+                index={idx}
+                className="relative flex items-start gap-4 md:flex-col md:items-start md:gap-5"
+              >
+                {/* Numbered node */}
+                <div className="relative z-10 flex-shrink-0">
+                  <span
+                    aria-hidden="true"
+                    className={clsx(
+                      'flex h-14 w-14 items-center justify-center rounded-2xl border bg-bg',
+                      warm
+                        ? 'border-accent1/40 shadow-[0_0_0_4px_var(--color-bg),0_0_18px_-6px_var(--color-accent1)]'
+                        : 'border-border',
+                    )}
+                  >
+                    <Icon
+                      className={clsx('h-6 w-6', warm ? 'text-accent1' : 'text-muted')}
+                      strokeWidth={1.75}
+                    />
+                  </span>
+                  <span className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-surface font-mono text-xs font-bold text-muted">
+                    {idx + 1}
+                  </span>
+                </div>
 
-          <ol className="relative grid grid-cols-1 gap-x-8 gap-y-10 md:grid-cols-2 lg:grid-cols-4">
-            {/* Mobile chalk rail running down the left of the stages. */}
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 40 1000"
-              preserveAspectRatio="none"
-              className="absolute left-[27px] top-8 h-[calc(100%-3rem)] w-10 overflow-visible md:hidden"
-            >
-              <motion.path
-                d="M20 8 L 20 992"
-                fill="none"
-                stroke="var(--color-accent1)"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeDasharray="5 9"
-                initial={reduce ? { pathLength: 1 } : { pathLength: 0 }}
-                animate={show ? { pathLength: 1 } : { pathLength: 0 }}
-                transition={{ duration: 1.3, ease: 'easeInOut' }}
-              />
-            </svg>
-
-            {content.steps.map((step, idx) => {
-              const meta = OWNER_META[step.owner];
-              const Icon = meta.icon;
-              const cool = meta.tone === 'cool';
-              return (
-                <motion.li
-                  key={step.stage}
-                  initial={reduce ? false : { opacity: 0, y: 20 }}
-                  animate={show ? { opacity: 1, y: 0 } : undefined}
-                  transition={{
-                    duration: 0.5,
-                    delay: idx * 0.18 + 0.2,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
-                  className="relative flex items-start gap-4 md:flex-col md:items-start md:gap-5"
-                >
-                  {/* Numbered chalk node */}
-                  <div className="relative z-10 flex-shrink-0">
-                    <span
-                      aria-hidden="true"
-                      className={clsx(
-                        'flex h-14 w-14 items-center justify-center rounded-2xl border bg-bg',
-                        cool
-                          ? 'border-accent2/40 shadow-[0_0_0_4px_var(--color-bg),0_0_24px_-4px_var(--color-accent2)]'
-                          : 'border-accent1/40 shadow-[0_0_0_4px_var(--color-bg),0_0_24px_-4px_var(--color-accent1)]',
-                      )}
-                    >
-                      <Icon
-                        className={clsx('h-6 w-6', cool ? 'text-accent2' : 'text-accent1')}
-                        strokeWidth={1.75}
-                      />
-                    </span>
-                    <span className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-accent2 font-mono text-xs font-bold text-bg">
-                      {idx + 1}
-                    </span>
-                  </div>
-
-                  <div className="pt-0.5 md:pt-2">
-                    {/* Owner pill: Client/AI = cool, Analyst/Senior = warm. */}
-                    <span
-                      className={clsx(
-                        'inline-flex w-fit items-center rounded-full px-2.5 py-1 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.16em]',
-                        cool
-                          ? 'bg-accent2/15 text-accent2'
-                          : 'bg-accent1/15 text-accent1',
-                      )}
-                    >
-                      {step.owner === 'Client'
-                        ? 'You'
-                        : step.owner === 'AI'
-                        ? 'AI assist'
-                        : step.owner === 'Senior'
-                        ? 'Senior analyst'
-                        : 'Human analyst'}
-                    </span>
-                    <h3 className="mt-3 font-display text-lg font-bold leading-snug text-text">
-                      {step.stage}
-                    </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-muted">
-                      {step.description}
-                    </p>
-                  </div>
-                </motion.li>
-              );
-            })}
-          </ol>
-        </div>
+                <div className="pt-0.5 md:pt-2">
+                  {/* Owner pill: human stages lime, input stages neutral. */}
+                  <span
+                    className={clsx(
+                      'inline-flex w-fit items-center rounded-full px-2.5 py-1 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.16em]',
+                      warm
+                        ? 'bg-accent1/15 text-accent1'
+                        : 'bg-surfaceAlt text-muted',
+                    )}
+                  >
+                    {step.owner === 'Client'
+                      ? 'You'
+                      : step.owner === 'AI'
+                      ? 'AI assist'
+                      : step.owner === 'Senior'
+                      ? 'Senior analyst'
+                      : 'Human analyst'}
+                  </span>
+                  <h3 className="mt-3 font-display text-lg font-bold leading-snug text-text">
+                    {step.stage}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted">
+                    {step.description}
+                  </p>
+                </div>
+              </Reveal>
+            );
+          })}
+        </ol>
       </div>
     </section>
   );

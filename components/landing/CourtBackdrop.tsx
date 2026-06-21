@@ -2,19 +2,23 @@
 
 // Stats Empire, CourtBackdrop
 //
-// The signature "Court Vision" animated background: an abstract, night
-// tactics-board surface. Chalk-style pitch geometry draws itself on
-// (framer-motion pathLength) while glowing play-trajectory arcs sweep across
-// the surface like a coach drawing the winning play in real time.
+// The signature "Court Vision" atmospheric background: an abstract, night
+// tactics-board surface. Chalk-style pitch geometry draws itself on ONCE
+// (framer-motion pathLength) and then rests, with a couple of soft accent
+// arcs as the single quiet focal glow behind the hero.
+//
+// Calmed for restraint: this is the one atmospheric spot on the page, so it
+// stays deliberately quiet. There is no perpetual/looping motion and no
+// travelling spark, the geometry draws on once and settles, and the accent
+// glow is lime-only (orange is reserved for the data viz, never marketing
+// chrome). Glows are softened (lower opacity + tighter spread).
 //
 // It is intentionally sport-AGNOSTIC and abstract, not a literal field, so it
-// reads as premium texture behind a hero or section divider rather than a
-// diagram. All color comes from the theme tokens (var(--color-*)); under
-// data-theme="court" the accents resolve to lime #E6FF3A + orange #FF5A3C and
-// the chalk lines to the muted court-blue border. Decorative + aria-hidden.
+// reads as premium texture behind a hero rather than a diagram. All color
+// comes from the theme tokens (var(--color-*)). Decorative + aria-hidden.
 //
 // Reduced-motion safe: when the user prefers reduced motion the whole scene
-// renders fully drawn and static (no draw-on, no looping arcs).
+// renders fully drawn and static (no draw-on).
 //
 // Usage:
 //   <div className="relative">
@@ -29,14 +33,15 @@ export interface CourtBackdropProps {
   /** Extra classes for the wrapping element (usually `absolute inset-0`). */
   className?: string;
   /**
-   * Visual density of the play arcs. 'divider' is calmer (fewer, slower arcs)
-   * for use behind section breaks; 'hero' is the fuller, signature version.
+   * Visual density of the play arcs. 'divider' is calmer (a single arc) for
+   * use behind section breaks; 'hero' is the fuller (still quiet) version.
    * Default 'hero'.
    */
   intensity?: 'hero' | 'divider';
   /**
-   * When true, arcs loop softly forever (signature hero feel). When false they
-   * draw on once and rest. Forced off under reduced motion. Default true.
+   * Retained for API stability. Looping background motion has been removed in
+   * favour of a calmer draw-on-once treatment, so this prop no longer enables
+   * perpetual animation; arcs always draw on once and rest.
    */
   loop?: boolean;
 }
@@ -63,25 +68,25 @@ const CHALK_LINES: { d: string; w: number; delay: number }[] = [
   { d: `M 300 700 L 300 600 L 900 600 L 900 700`, w: 1.5, delay: 0.9 },
 ];
 
-// Glowing play-trajectory arcs, the kinetic signature. Cubic beziers that
-// sweep across the surface. `accent` selects the lime/orange token; arcs draw
-// on, then (when looping) restart on a long, staggered cycle.
-const PLAY_ARCS: { d: string; accent: 1 | 2; delay: number; dur: number }[] = [
-  // Long diagonal switch of play (lime)
-  { d: `M 250 660 C 380 360, 720 520, 880 220`, accent: 1, delay: 0.6, dur: 2.2 },
-  // Counter-attack curl (orange)
-  { d: `M 1000 640 C 760 540, 700 300, 460 200`, accent: 2, delay: 1.0, dur: 2.4 },
-  // Through-ball / serve arc (lime)
-  { d: `M 600 700 C 560 520, 660 360, 600 180`, accent: 1, delay: 1.4, dur: 2.0 },
-  // Wide overlap (orange)
-  { d: `M 200 480 C 420 440, 520 300, 740 280`, accent: 2, delay: 1.8, dur: 2.3 },
+// Soft play-trajectory arcs, the single quiet focal glow. Cubic beziers that
+// sweep across the surface. Lime-only (accent1) so the hero chrome never mixes
+// lime and orange; orange is reserved for the data viz. Arcs draw on once and
+// rest, no looping.
+const PLAY_ARCS: { d: string; delay: number; dur: number }[] = [
+  // Long diagonal switch of play.
+  { d: `M 250 660 C 380 360, 720 520, 880 220`, delay: 0.6, dur: 2.2 },
+  // Through-ball / serve arc.
+  { d: `M 600 700 C 560 520, 660 360, 600 180`, delay: 1.1, dur: 2.0 },
 ];
 
 export default function CourtBackdrop({
   className,
   intensity = 'hero',
-  loop = true,
+  loop: _loop,
 }: CourtBackdropProps) {
+  // `loop` is intentionally ignored, see prop doc: perpetual background motion
+  // was removed for restraint. Referencing it keeps the prop API stable.
+  void _loop;
   const reduce = useReducedMotion();
   const reactId = useId();
   const uid = `cb-${reactId.replace(/[:]/g, '')}`;
@@ -99,9 +104,8 @@ export default function CourtBackdrop({
   // Treat "pre-mount" identically to reduced-motion: render static geometry.
   const still = reduce || !mounted;
 
-  // Divider variant is calmer: drop half the arcs, no looping.
-  const arcs = intensity === 'divider' ? PLAY_ARCS.slice(0, 2) : PLAY_ARCS;
-  const shouldLoop = loop && !reduce && mounted && intensity !== 'divider';
+  // Divider variant is calmer: a single arc.
+  const arcs = intensity === 'divider' ? PLAY_ARCS.slice(0, 1) : PLAY_ARCS;
 
   const chalk = 'var(--color-border)';
 
@@ -128,9 +132,10 @@ export default function CourtBackdrop({
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
-          {/* Accent glow for the play arcs, the kinetic, neon-chalk look. */}
-          <filter id={`${uid}-glow`} x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="6" result="g" />
+          {/* Accent glow for the play arcs. Softer spread than before so the
+              focal glow stays quiet rather than neon. */}
+          <filter id={`${uid}-glow`} x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="4" result="g" />
             <feMerge>
               <feMergeNode in="g" />
               <feMergeNode in="SourceGraphic" />
@@ -141,13 +146,13 @@ export default function CourtBackdrop({
         {/* Depth wash */}
         <rect x="0" y="0" width={VW} height={VH} fill={`url(#${uid}-wash)`} />
 
-        {/* Chalk pitch geometry, draws itself on, then rests. */}
+        {/* Chalk pitch geometry, draws itself on once, then rests. */}
         <g
           fill="none"
           stroke={chalk}
           strokeLinecap="round"
           strokeLinejoin="round"
-          opacity={0.5}
+          opacity={0.4}
           filter={`url(#${uid}-chalk)`}
         >
           {CHALK_LINES.map((l, i) =>
@@ -186,77 +191,33 @@ export default function CourtBackdrop({
           )}
         </g>
 
-        {/* Glowing play-trajectory arcs, the signature kinetic layer. */}
+        {/* Soft lime play-arcs, the single quiet focal glow. Draw on once
+            and rest, no looping, no travelling spark. Lime-only so the hero
+            chrome never mixes lime and orange. */}
         <g fill="none" strokeLinecap="round" filter={`url(#${uid}-glow)`}>
-          {arcs.map((a, i) => {
-            const stroke = a.accent === 1 ? 'var(--color-accent1)' : 'var(--color-accent2)';
-            if (still) {
-              return <path key={i} d={a.d} stroke={stroke} strokeWidth={2.5} strokeOpacity={0.7} />;
-            }
-            return (
+          {arcs.map((a, i) =>
+            still ? (
+              <path
+                key={i}
+                d={a.d}
+                stroke="var(--color-accent1)"
+                strokeWidth={2}
+                strokeOpacity={0.42}
+              />
+            ) : (
               <motion.path
                 key={i}
                 d={a.d}
-                stroke={stroke}
-                strokeWidth={2.5}
+                stroke="var(--color-accent1)"
+                strokeWidth={2}
                 initial={{ pathLength: 0, opacity: 0 }}
-                animate={
-                  shouldLoop
-                    ? { pathLength: [0, 1, 1, 0], opacity: [0, 0.9, 0.9, 0] }
-                    : { pathLength: 1, opacity: 0.8 }
-                }
-                transition={
-                  shouldLoop
-                    ? {
-                        duration: a.dur + 3.5,
-                        delay: a.delay,
-                        ease: 'easeInOut',
-                        repeat: Infinity,
-                        repeatDelay: 1.2,
-                        times: [0, a.dur / (a.dur + 3.5), 0.82, 1],
-                      }
-                    : {
-                        pathLength: { duration: a.dur, ease: 'easeOut', delay: a.delay },
-                        opacity: { duration: 0.5, delay: a.delay },
-                      }
-                }
+                animate={{ pathLength: 1, opacity: 0.42 }}
+                transition={{
+                  pathLength: { duration: a.dur, ease: 'easeOut', delay: a.delay },
+                  opacity: { duration: 0.6, delay: a.delay },
+                }}
               />
-            );
-          })}
-
-          {/* Travelling spark at the head of the first arc, only when looping.
-              A small dot that rides the path via offsetDistance for a "live"
-              tactics-pointer feel. CSS-driven so it respects the global
-              reduced-motion safety net too. */}
-          {shouldLoop && (
-            <motion.circle
-              r={4}
-              fill="var(--color-accent1)"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 1, 1, 0] }}
-              transition={{
-                duration: PLAY_ARCS[0].dur + 3.5,
-                delay: PLAY_ARCS[0].delay,
-                repeat: Infinity,
-                repeatDelay: 1.2,
-                times: [0, 0.1, 0.82, 1],
-              }}
-              style={{
-                offsetPath: `path('${PLAY_ARCS[0].d}')`,
-                // Fallback for browsers reading the non-prefixed prop name.
-                ['--court-arc' as string]: PLAY_ARCS[0].d,
-              }}
-            >
-              <animateMotion
-                dur={`${PLAY_ARCS[0].dur + 3.5}s`}
-                repeatCount="indefinite"
-                keyPoints="0;1;1"
-                keyTimes="0;0.46;1"
-                calcMode="spline"
-                keySplines="0.4 0 0.2 1;0 0 1 1"
-                path={PLAY_ARCS[0].d}
-              />
-            </motion.circle>
+            ),
           )}
         </g>
       </svg>

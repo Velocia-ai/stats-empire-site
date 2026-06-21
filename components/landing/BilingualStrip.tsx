@@ -13,14 +13,14 @@
 //   • <BilingualBadge />, the compact "Reports in English + 简体中文" pill on its
 //     own, droppable into the hero, the report bento, or a footer line.
 //
-// All colour/type via var(--color-*) tokens. Reduced-motion safe (fade-in only,
-// suppressed under reduced motion).
+// All colour/type via var(--color-*) tokens; entrance via the shared <Reveal>
+// primitive, reduced-motion safe.
 
-import { motion, useReducedMotion } from 'framer-motion';
 import { Languages } from 'lucide-react';
 import clsx from 'clsx';
 import { BILINGUAL_REPORTS } from '@/lib/content';
 import type { BilingualReports } from '@/lib/content';
+import { Reveal } from '@/components/Reveal';
 
 // ---------------------------------------------------------------------------
 // Compact badge, exported standalone so it can sit in the hero / report / footer.
@@ -62,46 +62,35 @@ export default function BilingualStrip({
   content = BILINGUAL_REPORTS,
   className,
 }: BilingualStripProps) {
-  const reduce = useReducedMotion();
-
   return (
     <section
       aria-label="Bilingual report delivery"
-      className={clsx('relative w-full px-5 py-10 sm:px-8 sm:py-12', className)}
+      className={clsx('relative w-full py-16 sm:py-20', className)}
     >
-      <motion.div
-        initial={reduce ? false : { opacity: 0, y: 16 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-15% 0px' }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="relative mx-auto flex max-w-6xl flex-col items-start gap-5 overflow-hidden rounded-3xl border border-border bg-surface/60 px-6 py-7 sm:flex-row sm:items-center sm:justify-between sm:px-8"
-      >
-        <span
-          aria-hidden="true"
-          className="grid-texture-fine pointer-events-none absolute inset-0"
-        />
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <Reveal className="relative flex flex-col items-start gap-6 rounded-3xl border border-border bg-surface/60 px-6 py-8 sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:px-8">
+          <div className="relative">
+            <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-accent1">
+              {content.eyebrow}
+            </p>
+            <h2 className="mt-2 font-display text-xl font-bold leading-snug text-text sm:text-2xl">
+              {/* 中文 lives in the headline copy; tag the run for correct rendering. */}
+              Every report, in English and{' '}
+              <span lang="zh-Hans" className="text-accent1">
+                中文
+              </span>
+              .
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
+              {content.subhead}
+            </p>
+          </div>
 
-        <div className="relative">
-          <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-accent1">
-            {content.eyebrow}
-          </p>
-          <h2 className="mt-2 font-display text-xl font-bold leading-snug text-text sm:text-2xl">
-            {/* 中文 lives in the headline copy; tag the run for correct rendering. */}
-            Every report, in English and{' '}
-            <span lang="zh-Hans" className="text-accent1">
-              中文
-            </span>
-            .
-          </h2>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
-            {content.subhead}
-          </p>
-        </div>
-
-        <div className="relative shrink-0">
-          <BilingualBadge label={content.badge} />
-        </div>
-      </motion.div>
+          <div className="relative shrink-0">
+            <BilingualBadge label={content.badge} />
+          </div>
+        </Reveal>
+      </div>
     </section>
   );
 }

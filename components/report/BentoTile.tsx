@@ -9,8 +9,9 @@
 // as deliberately composed (a hero, a couple of mediums, a wide strip) rather
 // than a uniform wall of identical cards.
 //
-// Theme-tokenized throughout (var(--color-*) via Tailwind utilities); the only
-// motion is a layout-aware entrance handled by the parent's AnimatePresence.
+// Theme-tokenized throughout (var(--color-*) via Tailwind utilities). Tiles are
+// kept calm: no corner glow, restrained borders, and only a gentle body
+// cross-fade when the active sport changes. Reduced-motion safe throughout.
 
 import clsx from 'clsx';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -43,9 +44,9 @@ export interface BentoTileProps {
 }
 
 const cardMotion = {
-  initial: { opacity: 0, y: 12, scale: 0.99 },
-  animate: { opacity: 1, y: 0, scale: 1 },
-  transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] as const },
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const },
 };
 
 export default function BentoTile({
@@ -65,21 +66,13 @@ export default function BentoTile({
       {...cardMotion}
       className={clsx(
         'group relative flex flex-col overflow-hidden rounded-2xl border bg-surface',
-        hero ? 'border-accent1/35' : 'border-border',
-        'transition-colors hover:border-accent1/40',
+        hero ? 'border-accent1/30' : 'border-border',
+        'transition-colors hover:border-border/70',
         className,
       )}
     >
-      {/* Hero gets a faint corner glow so the eye lands on it first. */}
-      {hero ? (
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-accent1/[0.07] blur-2xl"
-        />
-      ) : null}
-
       {(eyebrow || title || meta) && (
-        <header className="relative flex items-start justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
+        <header className="relative flex items-start justify-between gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
           <div className="min-w-0">
             {eyebrow ? (
               <p className="font-mono text-[0.6rem] font-medium uppercase tracking-[0.22em] text-accent1">
@@ -99,7 +92,7 @@ export default function BentoTile({
       <div
         className={clsx(
           'relative flex min-h-0 flex-1 flex-col',
-          flushBody ? 'mt-3' : 'p-4 pt-3 sm:p-5 sm:pt-3',
+          flushBody ? 'mt-4' : 'p-5 pt-3 sm:p-6 sm:pt-3',
         )}
       >
         {contentKey !== undefined ? (

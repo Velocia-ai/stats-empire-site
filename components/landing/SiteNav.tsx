@@ -128,7 +128,7 @@ function SiteNavView({
         <Link
           href="/"
           onClick={() => setMenuOpen(false)}
-          className="group inline-flex items-baseline gap-0.5 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent2"
+          className="group inline-flex items-baseline gap-0.5 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent1"
         >
           <span className="font-display text-lg font-extrabold tracking-tight text-text">
             Stats
@@ -149,7 +149,7 @@ function SiteNavView({
             <li key={l.href}>
               <Link
                 href={l.href}
-                className="rounded-full px-3 py-2 font-mono text-[0.78rem] uppercase tracking-wider text-muted transition-colors hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2"
+                className="rounded-full px-3 py-2 font-mono text-[0.78rem] uppercase tracking-wider text-muted transition-colors hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent1"
               >
                 {l.label}
               </Link>
@@ -166,10 +166,10 @@ function SiteNavView({
           <button
             type="button"
             onClick={onStart}
-            className="group hidden items-center gap-2 rounded-full bg-accent1 px-5 py-2.5 font-mono text-[0.78rem] font-semibold uppercase tracking-wider text-bg transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2 sm:inline-flex"
+            className="hidden items-center gap-2 rounded-full bg-accent1 px-5 py-2.5 font-mono text-[0.78rem] font-semibold uppercase tracking-wider text-bg transition-colors hover:bg-accent1/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent1 sm:inline-flex"
           >
             Start Free
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden />
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden />
           </button>
 
           {/* Mobile burger */}
@@ -179,7 +179,7 @@ function SiteNavView({
             aria-expanded={menuOpen}
             aria-controls="mobile-nav-sheet"
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border text-text transition-colors hover:bg-surfaceAlt focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2 md:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border text-text transition-colors hover:bg-surfaceAlt focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent1 md:hidden"
           >
             {menuOpen ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
           </button>
@@ -220,10 +220,10 @@ function SiteNavView({
                     setMenuOpen(false);
                     onStart();
                   }}
-                  className="group inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-accent1 px-5 py-3 font-mono text-sm font-semibold uppercase tracking-wider text-bg transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2"
+                  className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-full bg-accent1 px-5 py-3 font-mono text-sm font-semibold uppercase tracking-wider text-bg transition-colors hover:bg-accent1/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent1"
                 >
                   Start Free
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                  <ArrowRight className="h-4 w-4" aria-hidden />
                 </button>
               </div>
             </div>

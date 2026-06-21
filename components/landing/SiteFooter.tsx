@@ -2,16 +2,17 @@
 
 // Stats Empire, SiteFooter
 //
-// The site footer, Court Vision identity. A "chalk wordmark" (with a drawn
-// underline that strokes on when the footer enters view), the typed FOOTER nav
-// columns, a contact block (partnerships email + domain), and a legal line.
+// The site footer, Court Vision identity. The wordmark keeps a static lime
+// underline; the typed FOOTER nav columns, a contact block (partnerships email +
+// domain), and a legal line follow. Refined for calm restraint: the atmospheric
+// grid texture and the orange draw-on flourish were retired, separation is
+// carried by quiet border-token rules and whitespace, and lime is the only
+// accent.
 //
-// Pure presentation off the typed FOOTER content; the only motion is the
-// wordmark underline draw-on, guarded by useReducedMotion(). All color/type via
+// Pure presentation off the typed FOOTER content. All color/type via
 // var(--color-*) / var(--font-*) tokens.
 
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'framer-motion';
 import { Mail, Globe } from 'lucide-react';
 
 import { FOOTER } from '@/lib/content';
@@ -28,19 +29,15 @@ export interface SiteFooterProps {
 }
 
 export default function SiteFooter({ className }: SiteFooterProps) {
-  const reduce = useReducedMotion();
-
   return (
     <footer
       role="contentinfo"
       className={[
-        'relative border-t border-border px-6 pb-12 pt-16',
+        'relative border-t border-border pb-12 pt-16 sm:pt-20',
         className ?? '',
       ].join(' ')}
     >
-      <div aria-hidden className="pointer-events-none absolute inset-0 grid-texture-fine opacity-50" />
-
-      <div className="relative mx-auto max-w-6xl">
+      <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
         <div className="grid gap-12 lg:grid-cols-[1.4fr_2fr]">
           {/* Brand + tagline + contact */}
           <div className="max-w-sm">
@@ -48,24 +45,21 @@ export default function SiteFooter({ className }: SiteFooterProps) {
               <span className="font-display text-2xl font-bold tracking-tight text-text">
                 Stats<span className="text-accent1">Empire</span>
               </span>
-              {/* Chalk underline that draws on */}
+              {/* Static lime underline, calm (no draw-on flourish, no orange) */}
               <svg
                 viewBox="0 0 100 6"
                 preserveAspectRatio="none"
                 className="mt-1 h-1.5 w-full"
                 aria-hidden
               >
-                <motion.path
+                <path
                   d="M 0 3 Q 25 0, 50 3 T 100 3"
                   fill="none"
-                  stroke="var(--color-accent2)"
+                  stroke="var(--color-accent1)"
                   strokeWidth={1.5}
                   strokeLinecap="round"
                   vectorEffect="non-scaling-stroke"
-                  initial={reduce ? { pathLength: 1 } : { pathLength: 0 }}
-                  whileInView={{ pathLength: 1 }}
-                  viewport={{ once: true, amount: 0.6 }}
-                  transition={{ duration: reduce ? 0 : 0.9, ease: 'easeInOut' }}
+                  opacity={0.7}
                 />
               </svg>
             </div>
@@ -78,7 +72,7 @@ export default function SiteFooter({ className }: SiteFooterProps) {
               <li>
                 <a
                   href={`mailto:${FOOTER.partnershipsEmail}`}
-                  className="inline-flex items-center gap-2 font-mono text-xs text-muted transition-colors hover:text-accent1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2"
+                  className="inline-flex items-center gap-2 font-mono text-xs text-muted transition-colors hover:text-accent1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent1"
                 >
                   <Mail className="h-3.5 w-3.5" aria-hidden />
                   {FOOTER.partnershipsEmail}
@@ -87,7 +81,7 @@ export default function SiteFooter({ className }: SiteFooterProps) {
               <li>
                 <a
                   href={`https://${FOOTER.domain}`}
-                  className="inline-flex items-center gap-2 font-mono text-xs text-muted transition-colors hover:text-accent1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2"
+                  className="inline-flex items-center gap-2 font-mono text-xs text-muted transition-colors hover:text-accent1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent1"
                 >
                   <Globe className="h-3.5 w-3.5" aria-hidden />
                   {FOOTER.domain}
@@ -106,7 +100,7 @@ export default function SiteFooter({ className }: SiteFooterProps) {
                 <ul className="mt-4 space-y-2.5" role="list">
                   {col.links.map((link) => {
                     const className =
-                      'font-body text-sm text-muted transition-colors hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2';
+                      'font-body text-sm text-muted transition-colors hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent1';
                     return (
                       <li key={link.label}>
                         {isInternalHref(link.href) ? (

@@ -2,17 +2,21 @@
 
 // Stats Empire, Court Vision chalk-line primitives.
 //
-// Shared, reduced-motion-safe SVG flourishes for the Pricing surface. They give
-// the section its signature "coach drawing the winning play in chalk" feel:
+// Shared, reduced-motion-safe SVG flourishes. They give a surface its signature
+// "coach drawing the winning play in chalk" feel:
 //
 //   • <ChalkUnderline>, a hand-drawn-looking stroke that draws itself on once
 //                          the element scrolls into view (framer-motion pathLength).
 //   • <PlayTrajectory>, a glowing curved play-arc with an animated arrowhead,
-//                          used as the backdrop tying the token-ladder together.
+//                          used as the backdrop tying a token-ladder together.
+//
+// Refined for restraint: the draws are subtler (lower stroke opacity, gentler
+// timing) so the flourish reads as quiet chalk dust rather than a loud line,
+// and the supporting run reads neutral rather than orange so it doesn't
+// introduce a competing accent in marketing chrome.
 //
 // Colours come ONLY from the theme tokens (var(--color-*)), so the whole thing
-// re-skins with the active [data-theme]. Under Court Vision these resolve to the
-// deep court-blue bg + lime/orange chalk accents.
+// re-skins with the active [data-theme]. Public prop APIs are unchanged.
 
 import { motion, useReducedMotion } from 'framer-motion';
 
@@ -47,18 +51,18 @@ export function ChalkUnderline({
       style={{ display: 'block', width: '100%', height: '0.7rem', overflow: 'visible' }}
     >
       {prefersReduced ? (
-        <path d={d} fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" />
+        <path d={d} fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" opacity={0.75} />
       ) : (
         <motion.path
           d={d}
           fill="none"
           stroke={color}
-          strokeWidth={3}
+          strokeWidth={2.5}
           strokeLinecap="round"
-          initial={{ pathLength: 0, opacity: 0.4 }}
-          whileInView={{ pathLength: 1, opacity: 1 }}
+          initial={{ pathLength: 0, opacity: 0.3 }}
+          whileInView={{ pathLength: 1, opacity: 0.75 }}
           viewport={{ once: true, margin: '-10% 0px' }}
-          transition={{ pathLength: { duration: 0.7, ease: 'easeOut', delay }, opacity: { duration: 0.2, delay } }}
+          transition={{ pathLength: { duration: 0.9, ease: 'easeOut', delay }, opacity: { duration: 0.3, delay } }}
         />
       )}
     </svg>
@@ -92,7 +96,7 @@ export function PlayTrajectory({ className = '' }: PlayTrajectoryProps) {
     >
       <defs>
         <filter id="chalk-glow" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="3.5" result="blur" />
+          <feGaussianBlur stdDeviation="2.5" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
@@ -111,29 +115,30 @@ export function PlayTrajectory({ className = '' }: PlayTrajectoryProps) {
         </marker>
       </defs>
 
-      {/* Dashed secondary run, supporting movement on the tactics board. */}
+      {/* Dashed secondary run, supporting movement on the tactics board.
+          Neutral (border token) so it doesn't introduce a competing accent. */}
       {prefersReduced ? (
         <path
           d={tail}
           fill="none"
-          stroke="var(--color-accent2)"
+          stroke="var(--color-border)"
           strokeWidth={2}
           strokeDasharray="2 10"
           strokeLinecap="round"
-          opacity={0.5}
+          opacity={0.6}
         />
       ) : (
         <motion.path
           d={tail}
           fill="none"
-          stroke="var(--color-accent2)"
+          stroke="var(--color-border)"
           strokeWidth={2}
           strokeDasharray="2 10"
           strokeLinecap="round"
           initial={{ pathLength: 0, opacity: 0 }}
-          whileInView={{ pathLength: 1, opacity: 0.5 }}
+          whileInView={{ pathLength: 1, opacity: 0.6 }}
           viewport={{ once: true, margin: '-15% 0px' }}
-          transition={{ duration: 1.1, ease: 'easeInOut', delay: 0.2 }}
+          transition={{ duration: 1.3, ease: 'easeInOut', delay: 0.2 }}
         />
       )}
 
@@ -147,7 +152,7 @@ export function PlayTrajectory({ className = '' }: PlayTrajectoryProps) {
           strokeLinecap="round"
           markerEnd="url(#play-arrow)"
           filter="url(#chalk-glow)"
-          opacity={0.7}
+          opacity={0.55}
         />
       ) : (
         <motion.path
@@ -159,9 +164,9 @@ export function PlayTrajectory({ className = '' }: PlayTrajectoryProps) {
           markerEnd="url(#play-arrow)"
           filter="url(#chalk-glow)"
           initial={{ pathLength: 0, opacity: 0 }}
-          whileInView={{ pathLength: 1, opacity: 0.75 }}
+          whileInView={{ pathLength: 1, opacity: 0.55 }}
           viewport={{ once: true, margin: '-15% 0px' }}
-          transition={{ duration: 1.4, ease: 'easeInOut' }}
+          transition={{ duration: 1.6, ease: 'easeInOut' }}
         />
       )}
     </svg>

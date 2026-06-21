@@ -16,6 +16,7 @@ import { ArrowRight, FileText, Zap } from 'lucide-react';
 
 import { ProvenanceBadge } from '@/components/landing';
 import { useFreemiumTrigger } from '@/components/freemium';
+import Reveal from '@/components/Reveal';
 
 export interface ProductHeroProps {
   /** Optional extra classes for the outer <section>. */
@@ -30,25 +31,25 @@ export default function ProductHero({ className }: ProductHeroProps) {
       id="top"
       aria-labelledby="product-hero-heading"
       className={[
-        'relative w-full overflow-hidden px-5 pb-12 pt-28 sm:px-8 sm:pt-32 lg:pt-36',
+        'relative w-full overflow-hidden px-5 pb-16 pt-28 sm:px-8 sm:pt-32 lg:pt-36',
         className ?? '',
       ].join(' ')}
     >
-      <div aria-hidden className="pointer-events-none absolute inset-0 grid-texture" />
+      {/* The one calm atmospheric spot for this view: a single, soft lime glow. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-10 h-56 w-[34rem] max-w-full -translate-x-1/2 rounded-full bg-accent1/[0.08] blur-3xl"
+        className="pointer-events-none absolute left-1/2 top-10 h-56 w-[34rem] max-w-full -translate-x-1/2 rounded-full bg-accent1/[0.05] blur-3xl"
       />
 
-      <div className="relative mx-auto flex max-w-3xl flex-col items-center text-center">
-        <span className="inline-flex items-center gap-2 rounded-full border border-accent1/30 bg-surface/60 px-4 py-1.5 font-mono text-[0.7rem] uppercase tracking-[0.28em] text-accent1 backdrop-blur">
+      <Reveal className="relative mx-auto flex max-w-3xl flex-col items-center text-center">
+        <span className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-border bg-surface/60 px-4 font-mono text-[0.7rem] uppercase tracking-[0.28em] text-accent1 backdrop-blur">
           <FileText className="h-3.5 w-3.5" aria-hidden />
           The coach-ready report
         </span>
 
         <h1
           id="product-hero-heading"
-          className="mt-6 font-display text-4xl font-extrabold leading-[1.04] tracking-tight text-text sm:text-5xl"
+          className="mt-6 font-display font-extrabold leading-[1.05] tracking-tight text-text text-[clamp(2rem,6vw,3.5rem)]"
         >
           See exactly what lands in your report.
         </h1>
@@ -62,26 +63,26 @@ export default function ProductHero({ className }: ProductHeroProps) {
 
         <ProvenanceBadge className="mt-6 backdrop-blur" />
 
-        <div className="mt-7 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-center">
+        <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-center">
           <button
             type="button"
             onClick={open}
-            className="group inline-flex items-center justify-center gap-2 rounded-full bg-accent1 px-7 py-3.5 font-mono text-sm font-semibold uppercase tracking-wider text-bg transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2"
+            className="group inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-accent1 px-7 py-3.5 font-mono text-sm font-semibold uppercase tracking-wider text-bg transition-colors hover:bg-accent1/90"
           >
             <Zap className="h-4 w-4" aria-hidden />
             Try a free game
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+            <ArrowRight className="h-4 w-4" aria-hidden />
           </button>
 
           <Link
             href="/pricing"
-            className="group inline-flex items-center justify-center gap-2 rounded-full border border-border bg-surface/40 px-7 py-3.5 font-mono text-sm font-semibold uppercase tracking-wider text-text backdrop-blur transition-colors hover:border-accent2/60 hover:bg-surfaceAlt focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent2"
+            className="group inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-border bg-surface/40 px-7 py-3.5 font-mono text-sm font-semibold uppercase tracking-wider text-text backdrop-blur transition-colors hover:border-border/70 hover:text-text"
           >
             View pricing
-            <ArrowRight className="h-4 w-4 text-accent2 transition-transform group-hover:translate-x-0.5" aria-hidden />
+            <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }

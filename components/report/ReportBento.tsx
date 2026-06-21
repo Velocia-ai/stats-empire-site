@@ -29,6 +29,7 @@ import {
 import { MetricTable } from '@/components/viz/MetricTable';
 import { StatTiles } from '@/components/viz/StatTiles';
 import { TrendChart } from '@/components/viz/TrendChart';
+import Reveal from '@/components/Reveal';
 
 import BentoTile from './BentoTile';
 import SportToggle from './SportToggle';
@@ -152,19 +153,19 @@ export default function ReportBento({
       aria-labelledby="report-bento-heading"
       className={`relative w-full ${className}`}
     >
-      {/* faint grid texture anchors the section in the brand world */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 grid-texture" />
-
-      <div className="relative mx-auto w-full max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
+      <div className="relative mx-auto w-full max-w-6xl px-5 py-16 sm:px-8 sm:py-28 lg:py-32">
         {/* ---- Section header ------------------------------------------- */}
-        <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <Reveal
+          as="header"
+          className="mb-12 flex flex-col gap-6 sm:mb-16 sm:flex-row sm:items-end sm:justify-between"
+        >
           <div className="max-w-xl">
             <p className="font-mono text-[0.7rem] font-medium uppercase tracking-[0.3em] text-accent1">
               What you get
             </p>
             <h2
               id="report-bento-heading"
-              className="mt-3 font-display text-3xl font-bold leading-[1.05] tracking-tight text-text sm:text-4xl md:text-5xl"
+              className="mt-3 font-display font-bold leading-[1.1] tracking-tight text-text text-[clamp(1.75rem,5vw,3rem)]"
             >
               A coach-ready report
             </h2>
@@ -181,15 +182,15 @@ export default function ReportBento({
             onChange={setSport}
             className="self-start sm:self-auto"
           />
-        </header>
+        </Reveal>
 
         {/* ---- Bento grid ---------------------------------------------- */}
         {/* 6-col desktop grid drives the varied tile sizes; collapses to a
-            single column on mobile so nothing is cramped. The grid + tile
-            frames stay mounted across sport changes; only each tile's BODY
-            cross-fades (keyed on `sport`), so the morph is smooth and never
-            stalls. */}
-        <div className="mt-10 grid grid-cols-1 gap-4 sm:mt-12 sm:grid-cols-2 lg:grid-cols-6">
+            single column on mobile so every tile is full-width and nothing is
+            cramped. The grid + tile frames stay mounted across sport changes;
+            only each tile's BODY cross-fades (keyed on `sport`), so the morph
+            is smooth and never stalls. */}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-6">
             {/* HERO spatial tile, dominant, spans 4/6 cols × 2 rows */}
             <BentoTile
               hero
@@ -264,7 +265,7 @@ export default function ReportBento({
               flushBody
               className="sm:col-span-2 lg:col-span-3"
             >
-              <div className="px-4 pb-4 sm:px-5 sm:pb-5">
+              <div className="px-5 pb-5 sm:px-6 sm:pb-6">
                 <TrendChart
                   label={data.trend.label}
                   xLabels={data.trend.xLabels}
@@ -286,7 +287,7 @@ export default function ReportBento({
               }
               className="sm:col-span-2 lg:col-span-6"
             >
-              <div className="px-4 pb-4 sm:px-5 sm:pb-5">
+              <div className="px-5 pb-5 sm:px-6 sm:pb-6">
                 <MetricTable rows={data.metrics} />
               </div>
             </BentoTile>

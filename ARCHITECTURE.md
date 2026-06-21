@@ -64,6 +64,18 @@ trio and the thinner `HowItWorks` are still exported from
 chain-of-custody pipeline carries the "how it works" explainer and owns the nav's
 *How it works* link (→ `/#provenance`).
 
+**Shared rhythm + entrance motion.** Every marketing section across the three
+routes uses one vertical-rhythm scale, `py-16 sm:py-28 lg:py-32`, with content in
+`mx-auto max-w-6xl px-5 sm:px-8` (FAQ keeps a narrower `max-w-3xl` reading column)
+and section headers at `mb-12 sm:mb-16`. The three page-top heroes share
+`px-5 pt-28 sm:px-8 sm:pt-32 lg:pt-36`. Entrance motion is the single shared
+`<Reveal/>` primitive (`components/Reveal.tsx`): a fade plus ~12px rise over ~0.5s,
+fired once on scroll-in, with a capped index stagger for sibling grids; it renders
+the settled state under `prefers-reduced-motion`. `accent1` (lime) is the lone
+marketing accent, rationed to one CTA/highlight per view; `accent2` (orange) lives
+only inside the data viz. The dead `WhyUs`/`HowItWorks`/`ChalkLines` exports still
+carry the older bespoke pathLength/orange flourishes, but none are mounted.
+
 In-page nav anchors still scroll smoothly (`html { scroll-behavior: smooth;
 scroll-padding-top: 5rem }` in `globals.css`, offsetting the fixed nav; both
 neutralised under `prefers-reduced-motion`). Cross-page links go through

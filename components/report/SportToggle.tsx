@@ -88,7 +88,7 @@ export default function SportToggle({
             onClick={() => onChange(sport.key)}
             onKeyDown={(e) => handleKeyDown(e, i)}
             className={clsx(
-              'relative isolate rounded-full px-3 py-1.5 font-mono text-[0.7rem] font-semibold uppercase tracking-[0.12em] transition-colors sm:px-4 sm:text-xs',
+              'relative isolate inline-flex min-h-[44px] items-center rounded-full px-4 font-mono text-[0.7rem] font-semibold uppercase tracking-[0.12em] transition-colors sm:px-4 sm:text-xs',
               selected ? 'text-bg' : 'text-muted hover:text-text',
             )}
           >

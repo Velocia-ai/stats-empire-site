@@ -73,6 +73,7 @@
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     /* Smooth in-page anchor navigation for the nav links + footer links.
+       Calm, not flashy: smooth scroll only, no scroll-snap or long durations.
        Neutralised under prefers-reduced-motion by the media query below. */
     scroll-behavior: smooth;
     /* Offset anchored sections below the fixed SiteNav so headings aren't
@@ -86,6 +87,9 @@
     background-color: var(--color-bg);
     color: var(--color-text);
     font-family: var(--font-body);
+    /* Calmer reading rhythm: relaxed default line-height and a hair of
+       letter-spacing tightening on the body so long copy feels settled. */
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -101,10 +105,21 @@
     margin: 0;
   }
 
-  /* Visible, accent-colored focus ring for keyboard navigation (WCAG 2.4.7) */
+  /* Visible focus ring for keyboard navigation (WCAG 2.4.7).
+     Uses accent1 (lime), the site's single primary accent, so focus reads
+     as part of the calm palette rather than introducing a competing colour.
+     A soft outer halo keeps it legible on both dark surfaces and the
+     occasional accent-tinted control without shouting. */
   :focus-visible {
-    outline: 2px solid var(--color-accent2);
+    outline: 2px solid var(--color-accent1);
     outline-offset: 2px;
+    border-radius: 2px;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-accent1) 22%, transparent);
+  }
+  /* Only suppress the default outline for mouse/touch; keyboard users keep
+     the ring above. */
+  :focus:not(:focus-visible) {
+    outline: none;
   }
 
   /* Respect reduced-motion at the platform level. Component-level
@@ -122,22 +137,35 @@
 }
 
 @layer utilities {
-  /* Subtle grid texture overlay, driven by theme border color so it
-     adapts per palette. Apply to a positioned container. */
+  /* Atmospheric grid texture, driven by theme border color so it adapts
+     per palette. Apply to a positioned container.
+
+     Calmed for restraint: the base opacity is now barely-there so that,
+     even though many sections currently apply this class, the page reads
+     quiet rather than busy. For the one or two spots that should feel
+     intentionally textured (a hero/CTA atmosphere), add the opt-in
+     `grid-texture--feature` modifier for a slightly stronger, still soft
+     presence. Prefer whitespace to separate sections; reach for the
+     feature modifier sparingly. */
   .grid-texture {
     background-image:
       linear-gradient(to right, var(--color-border) 1px, transparent 1px),
       linear-gradient(to bottom, var(--color-border) 1px, transparent 1px);
-    background-size: 44px 44px;
+    background-size: 56px 56px;
     background-position: center center;
-    opacity: 0.12;
+    opacity: 0.04;
+  }
+
+  /* Opt-in, slightly more present, for at most one or two atmospheric spots. */
+  .grid-texture--feature {
+    opacity: 0.07;
   }
 
   .grid-texture-fine {
     background-image:
       linear-gradient(to right, var(--color-border) 1px, transparent 1px),
       linear-gradient(to bottom, var(--color-border) 1px, transparent 1px);
-    background-size: 16px 16px;
-    opacity: 0.08;
+    background-size: 18px 18px;
+    opacity: 0.03;
   }
 }
