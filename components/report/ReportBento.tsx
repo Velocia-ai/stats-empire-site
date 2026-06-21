@@ -117,19 +117,41 @@ function outcomeTally(points: SpatialPoint[]): string {
     .join(' · ');
 }
 
-// Stacked spatial layers share one square-ish frame; aspect kept generous so
-// every pitch (tall tennis, wide soccer) reads without cropping.
+// Stacked spatial layers share ONE frame: the PitchBackground sizes the box via
+// its own viewBox aspect, and every overlay is absolutely positioned over the
+// SAME viewBox, so markers/heat/zones/paths align pixel-for-pixel. A per-pitch
+// max-width keeps tall portrait fields (tennis 540x1000) from blowing the tile's
+// height out, while letting wider fields use the full width. `minHeight` floors
+// the rendered size so the in-SVG legends + markers never collapse to an
+// illegible scale in a small tile. Markers/legends live inside the SVG viewBox,
+// so the wrapper's overflow-hidden only clips the rounded corner, never the viz.
+const STACK_MAX_W: Record<PitchType, string> = {
+  'tennis-court': '20rem', // tall + narrow: cap width so height stays in the tile
+  'football-field': '22rem',
+  'soccer-pitch': '26rem',
+  'baseball-diamond': '100%',
+  'basketball-halfcourt': '100%',
+};
+
 function SpatialStack({
   children,
   pitch,
+  minHeight = 220,
 }: {
   children: React.ReactNode;
   pitch: PitchType;
+  /** Floor on the rendered height (px) so small tiles stay legible. */
+  minHeight?: number;
 }) {
   return (
-    <div className="relative w-full overflow-hidden rounded-xl bg-bg">
-      <PitchBackground pitch={pitch} className="block w-full" />
-      <div className="absolute inset-0">{children}</div>
+    <div className="flex w-full justify-center">
+      <div
+        className="relative overflow-hidden rounded-xl bg-bg"
+        style={{ width: '100%', maxWidth: STACK_MAX_W[pitch], minHeight }}
+      >
+        <PitchBackground pitch={pitch} className="block w-full" />
+        <div className="absolute inset-0">{children}</div>
+      </div>
     </div>
   );
 }
@@ -190,10 +212,18 @@ export default function ReportBento({
             cramped. The grid + tile frames stay mounted across sport changes;
             only each tile's BODY cross-fades (keyed on `sport`), so the morph
             is smooth and never stalls. */}
+        {/* The grid + tile frames stay mounted across sport changes; only each
+            tile's BODY cross-fades (keyed on `sport`). `index` drives a precise
+            reading-order cascade (hero, then across and down) so the reveal is
+            deliberate, never random; the frame entrance always settles visible
+            so it never gates a viz's own in-view draw-on. Row heights stay
+            content-driven (floored by each stack's min-height) so the hero's
+            2-row span keeps its intended dominant proportion. */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-6">
             {/* HERO spatial tile, dominant, spans 4/6 cols × 2 rows */}
             <BentoTile
               hero
+              index={0}
               contentKey={sport}
               eyebrow={spatial.eyebrow}
               title={spatial.title}
@@ -204,7 +234,7 @@ export default function ReportBento({
               }
               className="sm:col-span-2 lg:col-span-4 lg:row-span-2"
             >
-              <SpatialStack pitch={pitch}>
+              <SpatialStack pitch={pitch} minHeight={340}>
                 <HeroSpatial data={data} pitch={pitch} animate={!prefersReduced} />
               </SpatialStack>
               <p className="mt-3 font-body text-xs leading-relaxed text-muted">
@@ -215,6 +245,7 @@ export default function ReportBento({
 
             {/* HEADLINE numbers, wide-ish, spans 2/6 cols */}
             <BentoTile
+              index={1}
               contentKey={sport}
               eyebrow="Headline"
               title="Key numbers"
@@ -225,18 +256,20 @@ export default function ReportBento({
 
             {/* ZONE coverage tile, spans 2/6 cols */}
             <BentoTile
+              index={2}
               contentKey={sport}
               eyebrow="Coverage"
               title="Zone control"
               className="sm:col-span-1 lg:col-span-2"
             >
-              <SpatialStack pitch={pitch}>
+              <SpatialStack pitch={pitch} minHeight={240}>
                 <ZoneCoverage zones={data.zones} pitch={pitch} className="absolute inset-0" />
               </SpatialStack>
             </BentoTile>
 
             {/* TRAJECTORY tile, spans 3/6 cols */}
             <BentoTile
+              index={3}
               contentKey={sport}
               eyebrow="Movement"
               title="Trajectories"
@@ -247,7 +280,7 @@ export default function ReportBento({
               }
               className="sm:col-span-1 lg:col-span-3"
             >
-              <SpatialStack pitch={pitch}>
+              <SpatialStack pitch={pitch} minHeight={260}>
                 <TrajectoryLines
                   paths={data.trajectories}
                   pitch={pitch}
@@ -259,6 +292,7 @@ export default function ReportBento({
 
             {/* MOMENTUM / trend tile (Recharts), spans 3/6 cols */}
             <BentoTile
+              index={4}
               contentKey={sport}
               eyebrow="Momentum"
               title="Form trend"
@@ -276,6 +310,7 @@ export default function ReportBento({
 
             {/* ADVANCED metric table, full-width strip across the bottom */}
             <BentoTile
+              index={5}
               contentKey={sport}
               eyebrow="Deep dive"
               title="Advanced metrics"

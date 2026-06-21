@@ -25,14 +25,14 @@
 // attributes can't consume `var()` reliably).
 // =============================================================================
 
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useInView, useReducedMotion } from 'framer-motion';
 import {
   Area,
   CartesianGrid,
   ComposedChart,
   Label,
   LabelList,
-  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -238,6 +238,31 @@ export function TrendChart({ label, xLabels, series }: TrendChartProps) {
   const theme = useThemeColors();
   const gradientPrefix = useId().replace(/[:]/g, '');
 
+  // Draw-on gating. The line + area fill trace in via Recharts' native clip-rect
+  // reveal the first time the chart scrolls into view, then the last-value pin
+  // fades in once the draw completes. Reduced motion (and pre-hydration) skips
+  // the animation entirely: everything renders fully drawn, pin already shown.
+  const reduce = useReducedMotion();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(containerRef, { once: true, margin: '0px 0px -12% 0px' });
+  const shouldAnimate = !reduce && inView;
+  const [drawComplete, setDrawComplete] = useState(false);
+  useEffect(() => {
+    if (reduce) {
+      // Reduced motion: nothing animates, reveal the pin immediately.
+      setDrawComplete(true);
+      return;
+    }
+    if (!shouldAnimate) return;
+    // Animating: hide the pin, then reveal it when the draw ends. A safety
+    // timeout (slightly past the longest staggered draw) guarantees the pin
+    // appears even if Recharts skips onAnimationEnd for any reason.
+    setDrawComplete(false);
+    const longest = 1100 + (series.length - 1) * 220 + 200;
+    const t = window.setTimeout(() => setDrawComplete(true), longest);
+    return () => window.clearTimeout(t);
+  }, [reduce, shouldAnimate, series.length]);
+
   const { title, subtitle } = useMemo(() => splitLabel(label), [label]);
 
   // Per-series inferred units + resolved colors.
@@ -386,7 +411,7 @@ export function TrendChart({ label, xLabels, series }: TrendChartProps) {
         .
       </p>
 
-      <div className="h-60 w-full sm:h-72" aria-hidden="true">
+      <div className="h-60 w-full sm:h-72" aria-hidden="true" ref={containerRef}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={data}
@@ -402,17 +427,36 @@ export function TrendChart({ label, xLabels, series }: TrendChartProps) {
                   x2="0"
                   y2="1"
                 >
-                  <stop offset="0%" stopColor={colors[i]} stopOpacity={0.26} />
+                  {/* Richer vertical fall-off than a single stop: a bright band
+                      hugging the line, easing to fully transparent at the floor
+                      so the area reads as depth, not a flat slab. */}
+                  <stop offset="0%" stopColor={colors[i]} stopOpacity={0.32} />
+                  <stop offset="45%" stopColor={colors[i]} stopOpacity={0.12} />
                   <stop offset="100%" stopColor={colors[i]} stopOpacity={0} />
                 </linearGradient>
               ))}
+              {/* Soft glow so the stroke reads as a lit broadcast line, not a
+                  flat vector. Kept subtle (small blur) to stay crisp. */}
+              <filter
+                id={`${gradientPrefix}-glow`}
+                x="-20%"
+                y="-20%"
+                width="140%"
+                height="140%"
+              >
+                <feGaussianBlur stdDeviation="2.4" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
             </defs>
 
             <CartesianGrid
               vertical={false}
               stroke={theme.border}
-              strokeOpacity={0.55}
-              strokeDasharray="2 4"
+              strokeOpacity={0.5}
+              strokeDasharray="2 5"
             />
 
             {/* X axis: the match labels, captioned so it reads as "Match …". */}
@@ -485,6 +529,10 @@ export function TrendChart({ label, xLabels, series }: TrendChartProps) {
               const c = colors[i];
               const axisId = useDualAxis && i === 1 ? 'right' : 'left';
               const isLast = i === series.length - 1;
+              // Stagger the draw so a two-series chart traces in sequence, and
+              // mark the draw complete on the LAST series' onAnimationEnd (it
+              // begins latest, so it finishes the overall reveal).
+              const begin = shouldAnimate ? i * 220 : 0;
               return (
                 <Area
                   key={s.name}
@@ -493,16 +541,22 @@ export function TrendChart({ label, xLabels, series }: TrendChartProps) {
                   dataKey={s.name}
                   name={s.name}
                   stroke={c}
-                  strokeWidth={2.25}
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
                   fill={`url(#${gradientPrefix}-${i})`}
                   dot={false}
-                  activeDot={{ r: 4, strokeWidth: 0, fill: c }}
-                  isAnimationActive={false}
+                  activeDot={{ r: 4, strokeWidth: 2, stroke: theme.surface, fill: c }}
+                  style={{ filter: `url(#${gradientPrefix}-glow)` }}
+                  isAnimationActive={shouldAnimate}
+                  animationBegin={begin}
+                  animationDuration={1100}
+                  animationEasing="ease-out"
+                  onAnimationEnd={isLast ? () => setDrawComplete(true) : undefined}
                 >
                   {/* Pin the latest value on the final point of each series so
-                      the reader sees "where it ended up" without hovering.
-                      Only render on one series-pass to avoid label pile-up;
-                      LabelList already targets the last datum via content. */}
+                      the reader sees "where it ended up" without hovering. The
+                      pin fades in only after the line has finished drawing, so
+                      it doesn't float ahead of an unfinished stroke. */}
                   <LabelList
                     dataKey={s.name}
                     content={(props) => (
@@ -513,6 +567,7 @@ export function TrendChart({ label, xLabels, series }: TrendChartProps) {
                         surface={theme.surface}
                         lastIndex={xLabels.length - 1}
                         nudgeUp={isLast}
+                        revealed={drawComplete}
                       />
                     )}
                   />
@@ -542,8 +597,9 @@ function LastValueLabel(props: {
   surface: string;
   lastIndex: number;
   nudgeUp: boolean;
+  revealed: boolean;
 }) {
-  const { x, y, value, index, unit, color, surface, lastIndex, nudgeUp } = props;
+  const { x, y, value, index, unit, color, surface, lastIndex, nudgeUp, revealed } = props;
   if (index !== lastIndex) return null;
   const num = typeof value === 'number' ? value : Number(value);
   if (!Number.isFinite(num)) return null;
@@ -563,19 +619,31 @@ function LastValueLabel(props: {
   const rectX = cx - w - 8 < 0 ? cx + 8 : cx - w - 8;
   const rectY = cy + dy;
 
+  // The pin appears only once the line has finished drawing. Opacity is driven
+  // by a CSS transition rather than framer-motion because this node lives inside
+  // Recharts' own SVG tree; `revealed` flips to true on the draw's onAnimationEnd
+  // (or immediately under reduced motion), giving a clean fade-in either way.
   return (
-    <g aria-hidden="true">
+    <g
+      aria-hidden="true"
+      style={{
+        opacity: revealed ? 1 : 0,
+        transition: 'opacity 360ms ease-out',
+      }}
+    >
+      {/* Outer halo ring so the terminal node reads as the chart's focal point. */}
+      <circle cx={cx} cy={cy} r={6} fill={color} opacity={0.16} />
       <circle cx={cx} cy={cy} r={3.5} fill={color} stroke={surface} strokeWidth={1.5} />
       <rect
         x={rectX}
         y={rectY}
         width={w}
         height={h}
-        rx={4}
+        rx={5}
         fill={surface}
         stroke={color}
         strokeWidth={1}
-        opacity={0.95}
+        opacity={0.97}
       />
       <text
         x={rectX + w / 2}

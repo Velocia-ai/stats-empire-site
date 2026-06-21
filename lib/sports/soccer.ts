@@ -19,7 +19,8 @@ import type {
 
 // --- Shot map + key touches (final third) -------------------------------------
 const spray: SpatialPoint[] = [
-  // Shots toward the opponent goal (top); value carries xG so size encodes it.
+  // Shots toward the opponent goal (top); value carries xG so size encodes shot
+  // quality, the big tap-in (0.61 xG) reads as the standout chance.
   { x: 0.5, y: 0.1, outcome: 'winner', label: 'Goal, low driven, 0.34 xG', value: 0.34 },
   { x: 0.42, y: 0.14, outcome: 'miss', label: 'Shot, saved, 0.12 xG', value: 0.12 },
   { x: 0.58, y: 0.12, outcome: 'winner', label: 'Goal, header, 0.28 xG', value: 0.28 },
@@ -28,7 +29,10 @@ const spray: SpatialPoint[] = [
   { x: 0.5, y: 0.24, outcome: 'miss', label: 'Half-volley, off target, 0.09 xG', value: 0.09 },
   { x: 0.46, y: 0.08, outcome: 'winner', label: 'Tap-in rebound, 0.61 xG', value: 0.61 },
   { x: 0.3, y: 0.22, outcome: 'miss', label: 'Curler, post, 0.11 xG', value: 0.11 },
-  // Key progressive passes / carries (value=1, neutral size; outcome=make).
+  { x: 0.54, y: 0.16, outcome: 'miss', label: 'Volley, saved, 0.18 xG', value: 0.18 },
+  { x: 0.4, y: 0.1, outcome: 'miss', label: 'Shot, blocked, 0.15 xG', value: 0.15 },
+  { x: 0.62, y: 0.14, outcome: 'miss', label: 'Header, off target, 0.1 xG', value: 0.1 },
+  // Key progressive passes / carries (value=1, fixed mid size; outcome=make).
   { x: 0.3, y: 0.34, outcome: 'make', label: 'Through ball -> assist', value: 1 },
   { x: 0.7, y: 0.38, outcome: 'make', label: 'Cutback, chance created', value: 1 },
   { x: 0.46, y: 0.46, outcome: 'make', label: 'Line-breaking pass', value: 1 },
@@ -36,62 +40,86 @@ const spray: SpatialPoint[] = [
   { x: 0.78, y: 0.52, outcome: 'make', label: 'Switch of play', value: 1 },
   { x: 0.34, y: 0.3, outcome: 'make', label: 'Half-space combination', value: 1 },
   { x: 0.56, y: 0.42, outcome: 'make', label: 'One-two return', value: 1 },
+  { x: 0.26, y: 0.4, outcome: 'make', label: 'Cross from left, chance', value: 1 },
+  { x: 0.64, y: 0.5, outcome: 'make', label: 'Diagonal switch, right', value: 1 },
+  { x: 0.44, y: 0.36, outcome: 'make', label: 'Third-man run release', value: 1 },
   // Defensive actions (own half).
   { x: 0.4, y: 0.74, outcome: 'make', label: 'Tackle won', value: 1 },
   { x: 0.6, y: 0.7, outcome: 'make', label: 'Interception', value: 1 },
   { x: 0.5, y: 0.82, outcome: 'make', label: 'Clearance', value: 1 },
   { x: 0.32, y: 0.66, outcome: 'make', label: 'Ball recovery', value: 1 },
+  { x: 0.46, y: 0.78, outcome: 'make', label: 'Block, last-ditch', value: 1 },
 ];
 
 // --- Positional heatmap (advanced left #8: left half-space + middle third) -----
-// 64 cells on a regular grid; weights from a gaussian mixture so the field reads
-// as a continuous density bloom rather than scattered dots.
+// 90 cells on a regular grid; weights from a gaussian mixture so the field reads
+// as a continuous density bloom rather than scattered dots. One dominant hot core
+// in the left half-space at the middle/final-third seam, fading symmetrically.
 const heatmap: HeatCell[] = [
-  { x: 0.423, y: 0.115, weight: 0.16 }, { x: 0.5, y: 0.115, weight: 0.19 }, { x: 0.577, y: 0.115, weight: 0.15 },
-  { x: 0.269, y: 0.192, weight: 0.16 }, { x: 0.346, y: 0.192, weight: 0.28 }, { x: 0.423, y: 0.192, weight: 0.37 },
-  { x: 0.5, y: 0.192, weight: 0.38 }, { x: 0.577, y: 0.192, weight: 0.31 }, { x: 0.654, y: 0.192, weight: 0.18 },
-  { x: 0.192, y: 0.269, weight: 0.15 }, { x: 0.269, y: 0.269, weight: 0.33 }, { x: 0.346, y: 0.269, weight: 0.53 },
-  { x: 0.423, y: 0.269, weight: 0.62 }, { x: 0.5, y: 0.269, weight: 0.59 }, { x: 0.577, y: 0.269, weight: 0.44 },
-  { x: 0.654, y: 0.269, weight: 0.25 }, { x: 0.192, y: 0.346, weight: 0.23 }, { x: 0.269, y: 0.346, weight: 0.51 },
-  { x: 0.346, y: 0.346, weight: 0.78 }, { x: 0.423, y: 0.346, weight: 0.86 }, { x: 0.5, y: 0.346, weight: 0.74 },
-  { x: 0.577, y: 0.346, weight: 0.54 }, { x: 0.654, y: 0.346, weight: 0.32 }, { x: 0.731, y: 0.346, weight: 0.15 },
-  { x: 0.192, y: 0.423, weight: 0.27 }, { x: 0.269, y: 0.423, weight: 0.6 }, { x: 0.346, y: 0.423, weight: 0.92 },
-  { x: 0.423, y: 0.423, weight: 1 }, { x: 0.5, y: 0.423, weight: 0.84 }, { x: 0.577, y: 0.423, weight: 0.61 },
-  { x: 0.654, y: 0.423, weight: 0.39 }, { x: 0.731, y: 0.423, weight: 0.2 }, { x: 0.192, y: 0.5, weight: 0.25 },
-  { x: 0.269, y: 0.5, weight: 0.57 }, { x: 0.346, y: 0.5, weight: 0.89 }, { x: 0.423, y: 0.5, weight: 0.99 },
+  { x: 0.346, y: 0.115, weight: 0.13 }, { x: 0.423, y: 0.115, weight: 0.16 }, { x: 0.5, y: 0.115, weight: 0.19 },
+  { x: 0.577, y: 0.115, weight: 0.15 }, { x: 0.654, y: 0.115, weight: 0.11 }, { x: 0.192, y: 0.192, weight: 0.13 },
+  { x: 0.269, y: 0.192, weight: 0.2 }, { x: 0.346, y: 0.192, weight: 0.3 }, { x: 0.423, y: 0.192, weight: 0.38 },
+  { x: 0.5, y: 0.192, weight: 0.38 }, { x: 0.577, y: 0.192, weight: 0.31 }, { x: 0.654, y: 0.192, weight: 0.2 },
+  { x: 0.731, y: 0.192, weight: 0.12 }, { x: 0.115, y: 0.269, weight: 0.13 }, { x: 0.192, y: 0.269, weight: 0.24 },
+  { x: 0.269, y: 0.269, weight: 0.4 }, { x: 0.346, y: 0.269, weight: 0.56 }, { x: 0.423, y: 0.269, weight: 0.64 },
+  { x: 0.5, y: 0.269, weight: 0.59 }, { x: 0.577, y: 0.269, weight: 0.44 }, { x: 0.654, y: 0.269, weight: 0.27 },
+  { x: 0.731, y: 0.269, weight: 0.15 }, { x: 0.115, y: 0.346, weight: 0.17 }, { x: 0.192, y: 0.346, weight: 0.32 },
+  { x: 0.269, y: 0.346, weight: 0.56 }, { x: 0.346, y: 0.346, weight: 0.82 }, { x: 0.423, y: 0.346, weight: 0.9 },
+  { x: 0.5, y: 0.346, weight: 0.74 }, { x: 0.577, y: 0.346, weight: 0.54 }, { x: 0.654, y: 0.346, weight: 0.34 },
+  { x: 0.731, y: 0.346, weight: 0.18 }, { x: 0.115, y: 0.423, weight: 0.19 }, { x: 0.192, y: 0.423, weight: 0.34 },
+  { x: 0.269, y: 0.423, weight: 0.64 }, { x: 0.346, y: 0.423, weight: 0.94 }, { x: 0.423, y: 0.423, weight: 1 },
+  { x: 0.5, y: 0.423, weight: 0.84 }, { x: 0.577, y: 0.423, weight: 0.61 }, { x: 0.654, y: 0.423, weight: 0.39 },
+  { x: 0.731, y: 0.423, weight: 0.2 }, { x: 0.115, y: 0.5, weight: 0.18 }, { x: 0.192, y: 0.5, weight: 0.32 },
+  { x: 0.269, y: 0.5, weight: 0.62 }, { x: 0.346, y: 0.5, weight: 0.92 }, { x: 0.423, y: 0.5, weight: 0.99 },
   { x: 0.5, y: 0.5, weight: 0.84 }, { x: 0.577, y: 0.5, weight: 0.61 }, { x: 0.654, y: 0.5, weight: 0.41 },
-  { x: 0.731, y: 0.5, weight: 0.22 }, { x: 0.192, y: 0.577, weight: 0.19 }, { x: 0.269, y: 0.577, weight: 0.45 },
-  { x: 0.346, y: 0.577, weight: 0.74 }, { x: 0.423, y: 0.577, weight: 0.85 }, { x: 0.5, y: 0.577, weight: 0.73 },
-  { x: 0.577, y: 0.577, weight: 0.53 }, { x: 0.654, y: 0.577, weight: 0.34 }, { x: 0.731, y: 0.577, weight: 0.18 },
-  { x: 0.269, y: 0.654, weight: 0.32 }, { x: 0.346, y: 0.654, weight: 0.54 }, { x: 0.423, y: 0.654, weight: 0.64 },
-  { x: 0.5, y: 0.654, weight: 0.56 }, { x: 0.577, y: 0.654, weight: 0.4 }, { x: 0.654, y: 0.654, weight: 0.24 },
-  { x: 0.269, y: 0.731, weight: 0.19 }, { x: 0.346, y: 0.731, weight: 0.34 }, { x: 0.423, y: 0.731, weight: 0.42 },
-  { x: 0.5, y: 0.731, weight: 0.39 }, { x: 0.577, y: 0.731, weight: 0.27 }, { x: 0.654, y: 0.731, weight: 0.16 },
-  { x: 0.346, y: 0.807, weight: 0.17 }, { x: 0.423, y: 0.807, weight: 0.22 }, { x: 0.5, y: 0.807, weight: 0.21 },
-  { x: 0.577, y: 0.807, weight: 0.15 },
+  { x: 0.731, y: 0.5, weight: 0.22 }, { x: 0.115, y: 0.577, weight: 0.14 }, { x: 0.192, y: 0.577, weight: 0.26 },
+  { x: 0.269, y: 0.577, weight: 0.48 }, { x: 0.346, y: 0.577, weight: 0.76 }, { x: 0.423, y: 0.577, weight: 0.85 },
+  { x: 0.5, y: 0.577, weight: 0.73 }, { x: 0.577, y: 0.577, weight: 0.53 }, { x: 0.654, y: 0.577, weight: 0.34 },
+  { x: 0.731, y: 0.577, weight: 0.18 }, { x: 0.192, y: 0.654, weight: 0.18 }, { x: 0.269, y: 0.654, weight: 0.34 },
+  { x: 0.346, y: 0.654, weight: 0.56 }, { x: 0.423, y: 0.654, weight: 0.64 }, { x: 0.5, y: 0.654, weight: 0.56 },
+  { x: 0.577, y: 0.654, weight: 0.4 }, { x: 0.654, y: 0.654, weight: 0.24 }, { x: 0.731, y: 0.654, weight: 0.13 },
+  { x: 0.192, y: 0.731, weight: 0.13 }, { x: 0.269, y: 0.731, weight: 0.22 }, { x: 0.346, y: 0.731, weight: 0.36 },
+  { x: 0.423, y: 0.731, weight: 0.44 }, { x: 0.5, y: 0.731, weight: 0.39 }, { x: 0.577, y: 0.731, weight: 0.27 },
+  { x: 0.654, y: 0.731, weight: 0.16 }, { x: 0.269, y: 0.807, weight: 0.13 }, { x: 0.346, y: 0.807, weight: 0.2 },
+  { x: 0.423, y: 0.807, weight: 0.24 }, { x: 0.5, y: 0.807, weight: 0.21 }, { x: 0.577, y: 0.807, weight: 0.15 },
+  { x: 0.346, y: 0.884, weight: 0.11 }, { x: 0.423, y: 0.884, weight: 0.14 }, { x: 0.5, y: 0.884, weight: 0.13 },
 ];
 
-// --- Pitch-third zonal coverage (non-overlapping vertical partition) -----------
-// Three full-width bands partition the pitch top-to-bottom; value = share of the
-// player's involvements in that third.
+// --- Zonal coverage (non-overlapping partition) --------------------------------
+// Final third stays full-width; the busy middle third splits into the player's
+// favoured left half-space and the rest of midfield (so the hot left channel
+// reads on its own); the defensive third stays full-width. value = share of the
+// player's involvements in that zone (sums to ~1.0).
 const zones: ZonePolygon[] = [
   {
     id: 'final-third',
     label: 'Final Third',
     points: [[0.04, 0.04], [0.96, 0.04], [0.96, 0.37], [0.04, 0.37]],
-    value: 0.34,
+    value: 0.28,
   },
   {
-    id: 'middle-third',
-    label: 'Middle Third',
-    points: [[0.04, 0.37], [0.96, 0.37], [0.96, 0.66], [0.04, 0.66]],
-    value: 0.49,
+    id: 'left-halfspace',
+    label: 'Left Half-space',
+    points: [[0.04, 0.37], [0.42, 0.37], [0.42, 0.66], [0.04, 0.66]],
+    value: 0.31,
   },
   {
-    id: 'defensive-third',
-    label: 'Defensive Third',
-    points: [[0.04, 0.66], [0.96, 0.66], [0.96, 0.96], [0.04, 0.96]],
-    value: 0.17,
+    id: 'central-midfield',
+    label: 'Central Midfield',
+    points: [[0.42, 0.37], [0.96, 0.37], [0.96, 0.66], [0.42, 0.66]],
+    value: 0.18,
+  },
+  {
+    id: 'defensive-left',
+    label: 'Def. Left',
+    points: [[0.04, 0.66], [0.5, 0.66], [0.5, 0.96], [0.04, 0.96]],
+    value: 0.14,
+  },
+  {
+    id: 'defensive-right',
+    label: 'Def. Right',
+    points: [[0.5, 0.66], [0.96, 0.66], [0.96, 0.96], [0.5, 0.96]],
+    value: 0.09,
   },
 ];
 

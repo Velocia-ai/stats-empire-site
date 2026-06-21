@@ -20,30 +20,42 @@ import type {
 
 // --- Serve placement + winners spray (landing spots) --------------------------
 const spray: SpatialPoint[] = [
-  // Serving into the deuce box (right side, near net y≈0.32); value = mph.
+  // Serving into the deuce box (right side, near net y≈0.32); value = mph so the
+  // hardest serves render as the largest marks (peak = the fastest ace).
   { x: 0.7, y: 0.32, outcome: 'winner', label: 'Ace, out wide, deuce', value: 132 },
   { x: 0.56, y: 0.3, outcome: 'make', label: '1st serve, body', value: 118 },
   { x: 0.78, y: 0.36, outcome: 'winner', label: 'Ace, T, deuce', value: 128 },
-  { x: 0.62, y: 0.42, outcome: 'error', label: 'Double fault', value: 0 },
+  { x: 0.62, y: 0.42, outcome: 'error', label: 'Double fault', value: 88 },
   { x: 0.66, y: 0.34, outcome: 'make', label: '2nd serve, kick, deuce', value: 102 },
+  { x: 0.74, y: 0.3, outcome: 'make', label: '1st serve, T, deuce', value: 123 },
   // Serving into the ad box (left side).
   { x: 0.3, y: 0.32, outcome: 'winner', label: 'Ace, out wide, ad', value: 126 },
   { x: 0.44, y: 0.3, outcome: 'make', label: '1st serve, T, ad', value: 121 },
   { x: 0.22, y: 0.38, outcome: 'make', label: 'Kick serve, ad', value: 99 },
   { x: 0.34, y: 0.34, outcome: 'winner', label: 'Ace, body jam, ad', value: 124 },
-  // Groundstroke winners (landing deep in opponent court).
-  { x: 0.16, y: 0.12, outcome: 'winner', label: 'FH winner, DTL', value: 0 },
-  { x: 0.84, y: 0.1, outcome: 'winner', label: 'BH winner, crosscourt', value: 0 },
-  { x: 0.5, y: 0.08, outcome: 'make', label: 'Deep return', value: 0 },
-  { x: 0.74, y: 0.18, outcome: 'error', label: 'FH unforced, wide', value: 0 },
-  { x: 0.5, y: 0.46, outcome: 'winner', label: 'Drop-shot winner', value: 0 },
-  { x: 0.2, y: 0.2, outcome: 'winner', label: 'Passing shot, ad corner', value: 0 },
-  { x: 0.8, y: 0.22, outcome: 'make', label: 'Approach -> volley', value: 0 },
+  { x: 0.26, y: 0.31, outcome: 'make', label: '1st serve, wide, ad', value: 116 },
+  // Groundstroke winners + rally balls (landing deep in opponent court). value
+  // carries shot speed so heavy groundstrokes still size sensibly vs in-play.
+  { x: 0.16, y: 0.12, outcome: 'winner', label: 'FH winner, DTL', value: 82 },
+  { x: 0.84, y: 0.1, outcome: 'winner', label: 'BH winner, crosscourt', value: 79 },
+  { x: 0.5, y: 0.08, outcome: 'make', label: 'Deep return', value: 71 },
+  { x: 0.74, y: 0.18, outcome: 'error', label: 'FH unforced, wide', value: 76 },
+  { x: 0.5, y: 0.46, outcome: 'winner', label: 'Drop-shot winner', value: 48 },
+  { x: 0.2, y: 0.2, outcome: 'winner', label: 'Passing shot, ad corner', value: 84 },
+  { x: 0.8, y: 0.22, outcome: 'make', label: 'Approach -> volley', value: 58 },
+  { x: 0.12, y: 0.16, outcome: 'winner', label: 'FH inside-out winner', value: 86 },
+  { x: 0.88, y: 0.14, outcome: 'winner', label: 'BH down-the-line winner', value: 81 },
+  { x: 0.62, y: 0.12, outcome: 'make', label: 'Deep crosscourt FH', value: 74 },
+  { x: 0.38, y: 0.14, outcome: 'make', label: 'Deep crosscourt BH', value: 72 },
+  { x: 0.28, y: 0.16, outcome: 'error', label: 'BH unforced, long', value: 70 },
+  { x: 0.7, y: 0.16, outcome: 'make', label: 'Heavy topspin FH, deep', value: 77 },
+  { x: 0.46, y: 0.5, outcome: 'winner', label: 'Touch volley winner', value: 42 },
 ];
 
 // --- Shot-landing heatmap (opponent's half; deep corners + serve spots hot) ----
-// 73 cells on a regular grid over the top half (opponent court), with a serve
-// band near the service line; gaussian-mixture weights.
+// 91 cells on a regular grid over the top half (opponent court), with a serve
+// band near the service line; gaussian-mixture weights. Two dominant hot lobes
+// in the deep ad/deuce corners (heavy corner targeting) plus a warm serve band.
 const heatmap: HeatCell[] = [
   { x: 0.038, y: 0.038, weight: 0.15 }, { x: 0.115, y: 0.038, weight: 0.42 }, { x: 0.192, y: 0.038, weight: 0.47 },
   { x: 0.269, y: 0.038, weight: 0.26 }, { x: 0.346, y: 0.038, weight: 0.18 }, { x: 0.423, y: 0.038, weight: 0.26 },
@@ -58,18 +70,21 @@ const heatmap: HeatCell[] = [
   { x: 0.346, y: 0.192, weight: 0.29 }, { x: 0.423, y: 0.192, weight: 0.36 }, { x: 0.5, y: 0.192, weight: 0.44 },
   { x: 0.577, y: 0.192, weight: 0.36 }, { x: 0.654, y: 0.192, weight: 0.29 }, { x: 0.731, y: 0.192, weight: 0.46 },
   { x: 0.807, y: 0.192, weight: 0.83 }, { x: 0.884, y: 0.192, weight: 0.74 }, { x: 0.961, y: 0.192, weight: 0.27 },
-  { x: 0.115, y: 0.269, weight: 0.29 }, { x: 0.192, y: 0.269, weight: 0.43 }, { x: 0.269, y: 0.269, weight: 0.43 },
-  { x: 0.346, y: 0.269, weight: 0.36 }, { x: 0.423, y: 0.269, weight: 0.36 }, { x: 0.5, y: 0.269, weight: 0.44 },
-  { x: 0.577, y: 0.269, weight: 0.35 }, { x: 0.654, y: 0.269, weight: 0.34 }, { x: 0.731, y: 0.269, weight: 0.41 },
-  { x: 0.807, y: 0.269, weight: 0.41 }, { x: 0.884, y: 0.269, weight: 0.28 }, { x: 0.192, y: 0.346, weight: 0.29 },
+  { x: 0.038, y: 0.269, weight: 0.16 }, { x: 0.115, y: 0.269, weight: 0.32 }, { x: 0.192, y: 0.269, weight: 0.46 },
+  { x: 0.269, y: 0.269, weight: 0.44 }, { x: 0.346, y: 0.269, weight: 0.36 }, { x: 0.423, y: 0.269, weight: 0.36 },
+  { x: 0.5, y: 0.269, weight: 0.44 }, { x: 0.577, y: 0.269, weight: 0.35 }, { x: 0.654, y: 0.269, weight: 0.34 },
+  { x: 0.731, y: 0.269, weight: 0.42 }, { x: 0.807, y: 0.269, weight: 0.44 }, { x: 0.884, y: 0.269, weight: 0.3 },
+  { x: 0.961, y: 0.269, weight: 0.15 }, { x: 0.115, y: 0.346, weight: 0.2 }, { x: 0.192, y: 0.346, weight: 0.31 },
   { x: 0.269, y: 0.346, weight: 0.52 }, { x: 0.346, y: 0.346, weight: 0.5 }, { x: 0.423, y: 0.346, weight: 0.38 },
   { x: 0.5, y: 0.346, weight: 0.38 }, { x: 0.577, y: 0.346, weight: 0.37 }, { x: 0.654, y: 0.346, weight: 0.48 },
-  { x: 0.731, y: 0.346, weight: 0.49 }, { x: 0.807, y: 0.346, weight: 0.28 }, { x: 0.192, y: 0.423, weight: 0.14 },
-  { x: 0.269, y: 0.423, weight: 0.29 }, { x: 0.346, y: 0.423, weight: 0.38 }, { x: 0.423, y: 0.423, weight: 0.32 },
-  { x: 0.5, y: 0.423, weight: 0.25 }, { x: 0.577, y: 0.423, weight: 0.3 }, { x: 0.654, y: 0.423, weight: 0.36 },
-  { x: 0.731, y: 0.423, weight: 0.28 }, { x: 0.807, y: 0.423, weight: 0.13 }, { x: 0.346, y: 0.5, weight: 0.17 },
+  { x: 0.731, y: 0.346, weight: 0.5 }, { x: 0.807, y: 0.346, weight: 0.3 }, { x: 0.884, y: 0.346, weight: 0.18 },
+  { x: 0.115, y: 0.423, weight: 0.15 }, { x: 0.192, y: 0.423, weight: 0.16 }, { x: 0.269, y: 0.423, weight: 0.29 },
+  { x: 0.346, y: 0.423, weight: 0.38 }, { x: 0.423, y: 0.423, weight: 0.32 }, { x: 0.5, y: 0.423, weight: 0.25 },
+  { x: 0.577, y: 0.423, weight: 0.3 }, { x: 0.654, y: 0.423, weight: 0.36 }, { x: 0.731, y: 0.423, weight: 0.28 },
+  { x: 0.807, y: 0.423, weight: 0.14 }, { x: 0.269, y: 0.5, weight: 0.14 }, { x: 0.346, y: 0.5, weight: 0.17 },
   { x: 0.423, y: 0.5, weight: 0.2 }, { x: 0.5, y: 0.5, weight: 0.16 }, { x: 0.577, y: 0.5, weight: 0.18 },
-  { x: 0.654, y: 0.5, weight: 0.16 },
+  { x: 0.654, y: 0.5, weight: 0.16 }, { x: 0.731, y: 0.5, weight: 0.13 }, { x: 0.423, y: 0.577, weight: 0.12 },
+  { x: 0.5, y: 0.577, weight: 0.14 }, { x: 0.577, y: 0.577, weight: 0.12 },
 ];
 
 // --- Court zone coverage (non-overlapping partition of the full court) ---------
@@ -169,6 +184,22 @@ const trajectories: TrajectoryPath[] = [
     points: [[0.4, 0.88], [0.7, 0.3], [0.74, 0.18]],
     outcome: 'error',
     intensity: 0.42,
+  },
+  {
+    id: 'serve-t-deuce-ace',
+    label: 'Ace down the T, deuce court',
+    kind: 'Serve',
+    points: [[0.5, 0.95], [0.62, 0.6], [0.78, 0.36]],
+    outcome: 'winner',
+    intensity: 0.72,
+  },
+  {
+    id: 'inside-out-forehand',
+    label: 'Inside-out forehand winner',
+    kind: 'Forehand winner',
+    points: [[0.62, 0.86], [0.4, 0.5], [0.18, 0.24], [0.12, 0.16]],
+    outcome: 'winner',
+    intensity: 0.64,
   },
 ];
 

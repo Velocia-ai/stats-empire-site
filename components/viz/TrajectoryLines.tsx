@@ -16,13 +16,14 @@
 //     glance, and the single most important play is LABELLED in place.
 //
 // d3 generates the path `d` strings (line + curve); React renders them. When
-// `animate` is on, framer-motion runs a stroke draw-on, but it's reduced-
-// motion-safe: if the user prefers reduced motion, paths render fully drawn
-// with no animation.
+// `animate` is on AND the chart scrolls into view, framer-motion traces each
+// stroke ON in sequence (staggered) with a bright travelling head riding the
+// leading edge, then seats the arrowhead. It's reduced-motion-safe: if the user
+// prefers reduced motion, paths render fully drawn with no animation and no head.
 
-import { useId, useMemo } from 'react';
+import { useId, useMemo, useRef } from 'react';
 import { line, curveCatmullRom } from 'd3-shape';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useInView, useReducedMotion } from 'framer-motion';
 import type { Outcome, PitchType, TrajectoryPath } from '@/lib/types';
 import { makeProjector, projectPoints, viewBoxAttr } from './geometry';
 
@@ -118,10 +119,15 @@ export default function TrajectoryLines({
 }: TrajectoryLinesProps) {
   const proj = useMemo(() => makeProjector(pitch), [pitch]);
   const prefersReduced = useReducedMotion();
-  const shouldAnimate = animate && !prefersReduced;
+  // Draw-on fires when the chart is requested to animate AND has scrolled into
+  // view, once. Reduced motion disables it entirely (paths render fully drawn).
+  const ref = useRef<SVGSVGElement | null>(null);
+  const inView = useInView(ref, { once: true, margin: '-12% 0px -12% 0px' });
+  const shouldAnimate = animate && inView && !prefersReduced;
   // Unique per-instance prefix so marker / def ids never collide when several
   // TrajectoryLines render on one page (Hero + ReportBento + Freemium).
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
+  const glowId = `tl-glow-${uid}`;
 
   // Legend derived from the distinct sport-specific `kind` values present
   // (fallback to sentiment-bucket labels). Drawn in-SVG and used to key the
@@ -189,13 +195,15 @@ export default function TrajectoryLines({
   }, [paths, proj, legendByLabel]);
 
   // Stagger animation start so paths trace in sequence, not all at once.
-  const stagger = 0.06;
+  const stagger = 0.12;
+  const drawDur = 0.85;
 
   const { width: vw, height: vh } = proj.view;
   // Geometry scale: most viewBoxes are ~1000 wide; tennis is 540. Derive sizes
   // from the smaller axis so dots/markers/legend stay proportional per pitch.
   const unit = Math.min(vw, vh) / 1000;
   const originR = 7 * unit;
+  const headR = 5.5 * unit;
 
   // --- Legend box, laid out in viewBox units, pinned to the top-left -----------
   const lgPad = 18 * unit;
@@ -228,8 +236,13 @@ export default function TrajectoryLines({
     `${counts.muted} incomplete.` +
     (keyLine?.label ? ` Key play: ${keyLine.label}.` : '');
 
+  // The key-play label waits for its line (the most intense, drawn first) plus
+  // its draw duration, then fades in. Reduced/no-anim → shows immediately.
+  const keyLabelDelay = shouldAnimate ? drawDur + 0.15 : 0;
+
   return (
     <svg
+      ref={ref}
       viewBox={viewBoxAttr(pitch)}
       className={className}
       preserveAspectRatio="xMidYMid meet"
@@ -238,6 +251,15 @@ export default function TrajectoryLines({
       style={{ width: '100%', height: 'auto', display: 'block' }}
     >
       <defs>
+        {/* Coloured glow so a stroke lifts off the pitch like a broadcast graphic.
+            Kept subtle (small blur, partial opacity) so it reads premium, not neon. */}
+        <filter id={glowId} x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation={2.2 * unit} result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
         {/* One arrowhead marker per legend row (sport-specific label →
             sentiment colour). `context-stroke` would be ideal but isn't
             universal, so we bake the colour into each marker and reference the
@@ -247,20 +269,47 @@ export default function TrajectoryLines({
             key={e.key}
             id={`${uid}-arrow-${e.key}`}
             viewBox="0 0 10 10"
-            refX="8"
+            refX="7.5"
             refY="5"
             markerWidth="6.5"
             markerHeight="6.5"
             orient="auto-start-reverse"
             markerUnits="strokeWidth"
           >
-            <path d="M0.5,0.5 L9,5 L0.5,9.5 L3,5 Z" fill={e.color} />
+            <path d="M0.5,0.6 L9.2,5 L0.5,9.4 L3,5 Z" fill={e.color} />
           </marker>
         ))}
       </defs>
 
       <g aria-hidden="true" fill="none" strokeLinecap="round" strokeLinejoin="round">
-        {/* Paths, each with a directional arrowhead matching its colour. */}
+        {/* Dark casing under each stroke: a slightly wider bg-coloured line so a
+            lime/orange path stays crisp and separated where paths cross. */}
+        {lines.map((l, i) =>
+          shouldAnimate ? (
+            <motion.path
+              key={`${l.id}-casing`}
+              d={l.d}
+              stroke="var(--color-bg)"
+              strokeOpacity={0.55}
+              strokeWidth={l.width + 2.4 * unit}
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: drawDur, ease: 'easeInOut', delay: i * stagger }}
+            />
+          ) : (
+            <path
+              key={`${l.id}-casing`}
+              d={l.d}
+              stroke="var(--color-bg)"
+              strokeOpacity={0.55}
+              strokeWidth={l.width + 2.4 * unit}
+            />
+          ),
+        )}
+
+        {/* Paths, each with a directional arrowhead matching its colour. The
+            arrowhead fades in only once the stroke is essentially drawn, so it
+            doesn't sit detached at the destination while the line is still tracing. */}
         {lines.map((l, i) =>
           shouldAnimate ? (
             <motion.path
@@ -268,12 +317,13 @@ export default function TrajectoryLines({
               d={l.d}
               stroke={l.color}
               strokeWidth={l.width}
+              filter={`url(#${glowId})`}
               markerEnd={`url(#${uid}-arrow-${l.markerKey})`}
               initial={{ pathLength: 0, opacity: 0 }}
               animate={{ pathLength: 1, opacity: l.opacity }}
               transition={{
-                pathLength: { duration: 0.9, ease: 'easeOut', delay: i * stagger },
-                opacity: { duration: 0.3, delay: i * stagger },
+                pathLength: { duration: drawDur, ease: 'easeInOut', delay: i * stagger },
+                opacity: { duration: 0.25, delay: i * stagger },
               }}
             />
           ) : (
@@ -283,16 +333,49 @@ export default function TrajectoryLines({
               stroke={l.color}
               strokeWidth={l.width}
               strokeOpacity={l.opacity}
+              filter={`url(#${glowId})`}
               markerEnd={`url(#${uid}-arrow-${l.markerKey})`}
             />
           ),
         )}
 
+        {/* Travelling head: a bright dot rides the leading edge of each stroke
+            as it draws on, then fades, so the eye follows the play's direction.
+            Only rendered while animating (reduced motion / static = no head). */}
+        {shouldAnimate &&
+          lines.map((l, i) =>
+            // Skip degenerate paths (<2 points → empty d): `offsetPath: path('')`
+            // is invalid CSS, so only ride a head on a real path.
+            l.d ? (
+            <motion.circle
+              key={`${l.id}-head`}
+              r={headR}
+              cx={0}
+              cy={0}
+              fill={l.color}
+              filter={`url(#${glowId})`}
+              initial={{ opacity: 0, offsetDistance: '0%' }}
+              animate={{ opacity: [0, 1, 1, 0], offsetDistance: '100%' }}
+              transition={{
+                offsetDistance: { duration: drawDur, ease: 'easeInOut', delay: i * stagger },
+                opacity: {
+                  duration: drawDur,
+                  delay: i * stagger,
+                  times: [0, 0.12, 0.86, 1],
+                  ease: 'linear',
+                },
+              }}
+              style={{ offsetPath: `path('${l.d}')`, offsetRotate: '0deg' }}
+            />
+            ) : null,
+          )}
+
         {/* Origin dots, a hollow node where each play begins so the start of
-            every arrow is unambiguous even when paths overlap. */}
-        {lines.map((l) =>
+            every arrow is unambiguous even when paths overlap. Fades in with
+            its line when animating. */}
+        {lines.map((l, i) =>
           l.start ? (
-            <circle
+            <motion.circle
               key={`${l.id}-origin`}
               cx={l.start[0]}
               cy={l.start[1]}
@@ -301,12 +384,21 @@ export default function TrajectoryLines({
               stroke={l.color}
               strokeWidth={2 * unit}
               strokeOpacity={Math.max(l.opacity, 0.7)}
+              initial={shouldAnimate ? { opacity: 0, scale: 0.4 } : false}
+              animate={shouldAnimate ? { opacity: 1, scale: 1 } : undefined}
+              style={{ transformOrigin: `${l.start[0]}px ${l.start[1]}px` }}
+              transition={
+                shouldAnimate
+                  ? { duration: 0.3, delay: i * stagger, ease: [0.16, 1, 0.3, 1] }
+                  : undefined
+              }
             />
           ) : null,
         )}
 
         {/* Key-play label, placed just past the destination of the most
-            intense play, with a readable backing chip. */}
+            intense play, with a readable backing chip. Fades in after its line
+            has finished tracing. */}
         {keyLine && keyLine.end && (
           <KeyPlayLabel
             x={keyLine.end[0]}
@@ -316,6 +408,8 @@ export default function TrajectoryLines({
             color={keyLine.color}
             unit={unit}
             view={proj.view}
+            animateOn={shouldAnimate}
+            delay={keyLabelDelay}
           />
         )}
       </g>
@@ -386,6 +480,8 @@ function KeyPlayLabel({
   color,
   unit,
   view,
+  animateOn,
+  delay,
 }: {
   x: number;
   y: number;
@@ -394,6 +490,8 @@ function KeyPlayLabel({
   color: string;
   unit: number;
   view: { width: number; height: number };
+  animateOn: boolean;
+  delay: number;
 }) {
   const fontSize = 22 * unit;
   const padX = 12 * unit;
@@ -415,7 +513,12 @@ function KeyPlayLabel({
   cy = chipY + chipH / 2;
 
   return (
-    <g>
+    <motion.g
+      initial={animateOn ? { opacity: 0, scale: 0.9 } : false}
+      animate={animateOn ? { opacity: 1, scale: 1 } : undefined}
+      style={{ transformOrigin: `${cx}px ${cy}px` }}
+      transition={animateOn ? { duration: 0.35, delay, ease: [0.16, 1, 0.3, 1] } : undefined}
+    >
       {/* Connector from the arrow tip to the chip. */}
       <line
         x1={x}
@@ -449,7 +552,7 @@ function KeyPlayLabel({
       >
         {text}
       </text>
-    </g>
+    </motion.g>
   );
 }
 

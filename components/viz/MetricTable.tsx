@@ -1,18 +1,27 @@
+'use client';
+
 // MetricTable, advanced sports-analytics metric table.
 //
-// Pure presentational (no hooks / no browser APIs) so it stays a Server
-// Component and renders without shipping JS. Every metric row can carry:
+// Promoted to a Client Component so its numbers can COUNT UP and its bars can
+// DRAW ON the first time the table scrolls into view. The public prop API
+// (`rows: MetricRow[]`, `title?`) is unchanged, so every call site keeps
+// working. Each metric row can carry:
 //   - label/value/unit       → the stat itself, mono tabular numerals
-//   - delta                  → context-aware up/down arrow (up = good)
+//   - delta                  → context-aware up/down chip (up = good)
 //   - spark (number[])       → inline SVG sparkbar of recent history
 //   - max                    → thin progress bar (value / max fill)
 //
 // Styled entirely against theme tokens (bg-surface, text, accent1, …) so it
-// re-themes live with the A/B/C switch.
+// re-themes live with the A/B/C switch, and reduced-motion safe: count-ups
+// settle to their final value instantly, and every bar renders at its final
+// width/height with no transition.
 
+import { useRef } from 'react';
 import clsx from 'clsx';
 import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
+import { motion, useInView, useReducedMotion } from 'framer-motion';
 import type { MetricRow } from '@/lib/types';
+import { formatCount, parseNumericValue, useCountUp } from '@/lib/useCountUp';
 
 interface MetricTableProps {
   rows: MetricRow[];
@@ -26,8 +35,31 @@ function numeric(value: string | number): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-/** Inline sparkbar, a compact histogram of a row's recent values. */
-function SparkBar({ data, label }: { data: number[]; label: string }) {
+/** Animated value cell. Counts up once in view; settles instantly if reduced. */
+function MetricValue({ value, active }: { value: MetricRow['value']; active: boolean }) {
+  const parsed = parseNumericValue(value);
+  const n = useCountUp(parsed.target, active);
+  const text = parsed.numeric
+    ? `${parsed.prefix}${formatCount(n, parsed.decimals as number)}${parsed.suffix}`
+    : String(value);
+
+  return (
+    <span
+      className="break-words font-mono font-semibold tabular-nums text-text"
+      style={{ fontSize: 'clamp(0.85rem, 0.6rem + 0.9vw, 1rem)' }}
+    >
+      {text}
+    </span>
+  );
+}
+
+/**
+ * Inline sparkbar, a compact histogram of a row's recent values. Bars grow up
+ * from the baseline on enter, staggered left-to-right; the latest bar reads in
+ * accent so the eye lands on "now". Settles to full height under reduced motion.
+ */
+function SparkBar({ data, label, active }: { data: number[]; label: string; active: boolean }) {
+  const reduce = useReducedMotion();
   if (data.length === 0) return null;
   const max = Math.max(...data, 1);
   const min = Math.min(...data, 0);
@@ -40,16 +72,23 @@ function SparkBar({ data, label }: { data: number[]; label: string }) {
       aria-label={`${label} trend, ${data.length} recent values`}
     >
       {data.map((d, i) => {
-        const h = ((d - min) / range) * 100;
+        const h = Math.max(((d - min) / range) * 100, 8);
         const isLast = i === data.length - 1;
         return (
-          <span
+          <motion.span
             key={i}
             className={clsx(
-              'w-[3px] rounded-[1px] transition-colors sm:w-1',
+              'w-[3px] origin-bottom rounded-[1px] sm:w-1',
               isLast ? 'bg-accent1' : 'bg-muted/45',
             )}
-            style={{ height: `${Math.max(h, 8)}%` }}
+            style={{ height: `${h}%` }}
+            initial={reduce ? false : { scaleY: 0, opacity: 0 }}
+            animate={active || reduce ? { scaleY: 1, opacity: 1 } : { scaleY: 0, opacity: 0 }}
+            transition={{
+              duration: 0.5,
+              ease: [0.16, 1, 0.3, 1],
+              delay: reduce ? 0 : 0.1 + i * 0.04,
+            }}
           />
         );
       })}
@@ -82,8 +121,19 @@ function DeltaBadge({ delta }: { delta: number }) {
   );
 }
 
-/** Thin progress bar shown when a row defines `max`. */
-function ProgressBar({ value, max, label }: { value: number; max: number; label: string }) {
+/** Thin progress bar shown when a row defines `max`. Draws to width on enter. */
+function ProgressBar({
+  value,
+  max,
+  label,
+  active,
+}: {
+  value: number;
+  max: number;
+  label: string;
+  active: boolean;
+}) {
+  const reduce = useReducedMotion();
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
   return (
     <div
@@ -94,17 +144,25 @@ function ProgressBar({ value, max, label }: { value: number; max: number; label:
       aria-valuemin={0}
       aria-valuemax={100}
     >
-      <div
-        className="h-full rounded-full bg-accent1"
-        style={{ width: `${pct}%` }}
+      <motion.div
+        className="h-full rounded-full bg-gradient-to-r from-accent1/80 to-accent1"
+        initial={reduce ? false : { width: 0 }}
+        animate={active || reduce ? { width: `${pct}%` } : { width: 0 }}
+        transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: reduce ? 0 : 0.15 }}
       />
     </div>
   );
 }
 
 export function MetricTable({ rows, title }: MetricTableProps) {
+  const reduce = useReducedMotion();
+  const ref = useRef<HTMLElement>(null);
+  const inView = useInView(ref, { once: true, margin: '0px 0px -10% 0px' });
+  const active = reduce ? true : inView;
+
   return (
     <section
+      ref={ref}
       className="overflow-hidden rounded-2xl border border-border bg-surface"
       aria-label={title ?? 'Advanced metrics'}
     >
@@ -165,7 +223,7 @@ export function MetricTable({ rows, title }: MetricTableProps) {
             return (
               <tr
                 key={`${row.label}-${idx}`}
-                className="group border-b border-border/60 last:border-b-0 transition-colors hover:bg-surfaceAlt/50"
+                className="group border-b border-border/60 transition-colors last:border-b-0 hover:bg-surfaceAlt/50"
               >
                 {/* Label + optional progress bar */}
                 <th
@@ -175,7 +233,7 @@ export function MetricTable({ rows, title }: MetricTableProps) {
                   <span className="block break-words">{row.label}</span>
                   {showProgress ? (
                     <span className="mt-2 block max-w-[12rem]">
-                      <ProgressBar value={value!} max={row.max!} label={row.label} />
+                      <ProgressBar value={value!} max={row.max!} label={row.label} active={active} />
                     </span>
                   ) : null}
                 </th>
@@ -185,15 +243,13 @@ export function MetricTable({ rows, title }: MetricTableProps) {
                     the numeral scales via clamp(). tabular-nums aligns digits. */}
                 <td className="px-3 py-3 text-right align-middle">
                   <span className="inline-flex max-w-full flex-wrap items-baseline justify-end gap-x-1">
-                    <span
-                      className="break-words font-mono font-semibold tabular-nums text-text"
-                      style={{ fontSize: 'clamp(0.85rem, 0.6rem + 0.9vw, 1rem)' }}
-                    >
-                      {row.value}
+                    <span className="sr-only">{row.value}{row.unit ? ` ${row.unit}` : ''}</span>
+                    <span aria-hidden="true" className="contents">
+                      <MetricValue value={row.value} active={active} />
+                      {row.unit ? (
+                        <span className="font-mono text-[0.7rem] text-muted">{row.unit}</span>
+                      ) : null}
                     </span>
-                    {row.unit ? (
-                      <span className="font-mono text-[0.7rem] text-muted">{row.unit}</span>
-                    ) : null}
                   </span>
                   {/* Delta inline on small screens (hidden Δ column) */}
                   {row.delta != null ? (
@@ -205,7 +261,9 @@ export function MetricTable({ rows, title }: MetricTableProps) {
 
                 {/* Delta column (>= sm) */}
                 <td className="hidden px-3 py-3 text-right align-middle sm:table-cell">
-                  {row.delta != null ? <DeltaBadge delta={row.delta} /> : (
+                  {row.delta != null ? (
+                    <DeltaBadge delta={row.delta} />
+                  ) : (
                     <span className="font-mono text-xs text-muted">-</span>
                   )}
                 </td>
@@ -213,7 +271,7 @@ export function MetricTable({ rows, title }: MetricTableProps) {
                 {/* Sparkbar column (>= md) */}
                 <td className="hidden overflow-hidden px-3 py-3 align-middle md:table-cell">
                   {row.spark && row.spark.length > 0 ? (
-                    <SparkBar data={row.spark} label={row.label} />
+                    <SparkBar data={row.spark} label={row.label} active={active} />
                   ) : (
                     <span className="font-mono text-xs text-muted">-</span>
                   )}

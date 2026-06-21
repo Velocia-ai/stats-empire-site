@@ -18,64 +18,79 @@ import type {
 
 // --- Shot chart: makes and misses by location ---------------------------------
 const spray: SpatialPoint[] = [
-  // At the rim
+  // At the rim (high-frequency, high-efficiency cluster)
   { x: 0.5, y: 0.84, outcome: 'make', label: 'Dunk', value: 2 },
   { x: 0.46, y: 0.8, outcome: 'make', label: 'Layup', value: 2 },
   { x: 0.55, y: 0.82, outcome: 'miss', label: 'Contested layup', value: 2 },
   { x: 0.5, y: 0.78, outcome: 'make', label: 'Floater', value: 2 },
   { x: 0.42, y: 0.83, outcome: 'make', label: 'Reverse layup', value: 2 },
   { x: 0.58, y: 0.85, outcome: 'make', label: 'Putback', value: 2 },
-  // Mid-range
+  { x: 0.47, y: 0.86, outcome: 'make', label: 'Cut -> dunk', value: 2 },
+  { x: 0.54, y: 0.79, outcome: 'miss', label: 'Runner, contested', value: 2 },
+  { x: 0.5, y: 0.81, outcome: 'make', label: 'Euro-step layup', value: 2 },
+  // Mid-range (thin by design, a few pull-ups)
   { x: 0.32, y: 0.66, outcome: 'make', label: 'Mid-range pull-up', value: 2 },
   { x: 0.68, y: 0.64, outcome: 'miss', label: 'Mid-range fade', value: 2 },
   { x: 0.42, y: 0.58, outcome: 'make', label: 'Elbow jumper', value: 2 },
   { x: 0.58, y: 0.6, outcome: 'miss', label: 'Baseline turnaround', value: 2 },
   { x: 0.5, y: 0.62, outcome: 'make', label: 'Free-throw-line jumper', value: 2 },
-  // Three-point, corners
+  { x: 0.62, y: 0.68, outcome: 'miss', label: 'Step-back mid-range', value: 2 },
+  // Three-point, corners (signature corner-three diet)
   { x: 0.09, y: 0.72, outcome: 'make', label: 'Corner 3, left', value: 3 },
   { x: 0.91, y: 0.72, outcome: 'make', label: 'Corner 3, right', value: 3 },
   { x: 0.12, y: 0.68, outcome: 'miss', label: 'Corner 3, left', value: 3 },
   { x: 0.88, y: 0.7, outcome: 'make', label: 'Corner 3, right', value: 3 },
-  // Three-point, wings / top
+  { x: 0.1, y: 0.7, outcome: 'make', label: 'Corner 3, left', value: 3 },
+  { x: 0.9, y: 0.74, outcome: 'miss', label: 'Corner 3, right', value: 3 },
+  // Three-point, wings / top of key
   { x: 0.24, y: 0.5, outcome: 'make', label: 'Wing 3, left', value: 3 },
   { x: 0.76, y: 0.5, outcome: 'miss', label: 'Wing 3, right', value: 3 },
   { x: 0.5, y: 0.42, outcome: 'make', label: 'Top-of-key 3', value: 3 },
   { x: 0.5, y: 0.38, outcome: 'make', label: 'Deep 3, pull-up', value: 3 },
   { x: 0.36, y: 0.46, outcome: 'miss', label: 'Wing 3, left', value: 3 },
   { x: 0.64, y: 0.46, outcome: 'make', label: 'Wing 3, right', value: 3 },
+  { x: 0.28, y: 0.47, outcome: 'make', label: 'Wing 3, left', value: 3 },
+  { x: 0.72, y: 0.48, outcome: 'make', label: 'Wing 3, right', value: 3 },
+  { x: 0.44, y: 0.4, outcome: 'miss', label: 'Top-of-key 3', value: 3 },
 ];
 
 // --- Shot-zone frequency heatmap (rim + corners + wings + top of key hot) ------
-// 79 cells on a regular grid; gaussian-mixture weights bloom into the classic
-// "rim + three-point hot zones, dead mid-range" map.
+// 95 cells on a regular grid; gaussian-mixture weights bloom into the classic
+// "rim + three-point hot zones, dead mid-range" map. Three hot lobes (rim,
+// each corner) plus a warm above-the-break band; mid-range stays cool.
 const heatmap: HeatCell[] = [
-  { x: 0.464, y: 0.321, weight: 0.15 }, { x: 0.536, y: 0.321, weight: 0.15 }, { x: 0.178, y: 0.393, weight: 0.13 },
-  { x: 0.25, y: 0.393, weight: 0.2 }, { x: 0.393, y: 0.393, weight: 0.19 }, { x: 0.464, y: 0.393, weight: 0.51 },
-  { x: 0.536, y: 0.393, weight: 0.51 }, { x: 0.607, y: 0.393, weight: 0.19 }, { x: 0.75, y: 0.393, weight: 0.19 },
-  { x: 0.821, y: 0.393, weight: 0.12 }, { x: 0.178, y: 0.464, weight: 0.32 }, { x: 0.25, y: 0.464, weight: 0.5 },
-  { x: 0.321, y: 0.464, weight: 0.25 }, { x: 0.393, y: 0.464, weight: 0.19 }, { x: 0.464, y: 0.464, weight: 0.44 },
-  { x: 0.536, y: 0.464, weight: 0.44 }, { x: 0.607, y: 0.464, weight: 0.19 }, { x: 0.678, y: 0.464, weight: 0.24 },
-  { x: 0.75, y: 0.464, weight: 0.47 }, { x: 0.821, y: 0.464, weight: 0.3 }, { x: 0.178, y: 0.536, weight: 0.33 },
-  { x: 0.25, y: 0.536, weight: 0.51 }, { x: 0.321, y: 0.536, weight: 0.29 }, { x: 0.393, y: 0.536, weight: 0.12 },
-  { x: 0.607, y: 0.536, weight: 0.12 }, { x: 0.678, y: 0.536, weight: 0.27 }, { x: 0.75, y: 0.536, weight: 0.48 },
-  { x: 0.821, y: 0.536, weight: 0.32 }, { x: 0.036, y: 0.607, weight: 0.12 }, { x: 0.107, y: 0.607, weight: 0.26 },
-  { x: 0.178, y: 0.607, weight: 0.22 }, { x: 0.25, y: 0.607, weight: 0.26 }, { x: 0.321, y: 0.607, weight: 0.32 },
-  { x: 0.393, y: 0.607, weight: 0.26 }, { x: 0.607, y: 0.607, weight: 0.24 }, { x: 0.678, y: 0.607, weight: 0.3 },
-  { x: 0.75, y: 0.607, weight: 0.24 }, { x: 0.821, y: 0.607, weight: 0.21 }, { x: 0.893, y: 0.607, weight: 0.24 },
-  { x: 0.036, y: 0.678, weight: 0.32 }, { x: 0.107, y: 0.678, weight: 0.63 }, { x: 0.178, y: 0.678, weight: 0.25 },
-  { x: 0.321, y: 0.678, weight: 0.25 }, { x: 0.393, y: 0.678, weight: 0.3 }, { x: 0.464, y: 0.678, weight: 0.19 },
-  { x: 0.536, y: 0.678, weight: 0.19 }, { x: 0.607, y: 0.678, weight: 0.28 }, { x: 0.678, y: 0.678, weight: 0.24 },
-  { x: 0.821, y: 0.678, weight: 0.23 }, { x: 0.893, y: 0.678, weight: 0.59 }, { x: 0.964, y: 0.678, weight: 0.3 },
-  { x: 0.036, y: 0.75, weight: 0.34 }, { x: 0.107, y: 0.75, weight: 0.67 }, { x: 0.178, y: 0.75, weight: 0.25 },
-  { x: 0.321, y: 0.75, weight: 0.14 }, { x: 0.393, y: 0.75, weight: 0.37 }, { x: 0.464, y: 0.75, weight: 0.62 },
-  { x: 0.536, y: 0.75, weight: 0.62 }, { x: 0.607, y: 0.75, weight: 0.37 }, { x: 0.678, y: 0.75, weight: 0.14 },
-  { x: 0.821, y: 0.75, weight: 0.23 }, { x: 0.893, y: 0.75, weight: 0.63 }, { x: 0.964, y: 0.75, weight: 0.33 },
-  { x: 0.036, y: 0.821, weight: 0.15 }, { x: 0.107, y: 0.821, weight: 0.29 }, { x: 0.321, y: 0.821, weight: 0.15 },
-  { x: 0.393, y: 0.821, weight: 0.53 }, { x: 0.464, y: 0.821, weight: 1 }, { x: 0.536, y: 0.821, weight: 1 },
-  { x: 0.607, y: 0.821, weight: 0.54 }, { x: 0.678, y: 0.821, weight: 0.15 }, { x: 0.893, y: 0.821, weight: 0.28 },
-  { x: 0.964, y: 0.821, weight: 0.14 }, { x: 0.393, y: 0.893, weight: 0.31 }, { x: 0.464, y: 0.893, weight: 0.58 },
-  { x: 0.536, y: 0.893, weight: 0.58 }, { x: 0.607, y: 0.893, weight: 0.31 }, { x: 0.464, y: 0.964, weight: 0.12 },
-  { x: 0.536, y: 0.964, weight: 0.12 },
+  { x: 0.393, y: 0.321, weight: 0.16 }, { x: 0.464, y: 0.321, weight: 0.21 }, { x: 0.536, y: 0.321, weight: 0.21 },
+  { x: 0.607, y: 0.321, weight: 0.16 }, { x: 0.25, y: 0.321, weight: 0.13 }, { x: 0.75, y: 0.321, weight: 0.13 },
+  { x: 0.178, y: 0.393, weight: 0.13 }, { x: 0.25, y: 0.393, weight: 0.2 }, { x: 0.321, y: 0.393, weight: 0.24 },
+  { x: 0.393, y: 0.393, weight: 0.34 }, { x: 0.464, y: 0.393, weight: 0.58 }, { x: 0.536, y: 0.393, weight: 0.58 },
+  { x: 0.607, y: 0.393, weight: 0.34 }, { x: 0.678, y: 0.393, weight: 0.24 }, { x: 0.75, y: 0.393, weight: 0.2 },
+  { x: 0.821, y: 0.393, weight: 0.13 }, { x: 0.107, y: 0.464, weight: 0.2 }, { x: 0.178, y: 0.464, weight: 0.36 },
+  { x: 0.25, y: 0.464, weight: 0.56 }, { x: 0.321, y: 0.464, weight: 0.3 }, { x: 0.393, y: 0.464, weight: 0.2 },
+  { x: 0.464, y: 0.464, weight: 0.46 }, { x: 0.536, y: 0.464, weight: 0.46 }, { x: 0.607, y: 0.464, weight: 0.2 },
+  { x: 0.678, y: 0.464, weight: 0.28 }, { x: 0.75, y: 0.464, weight: 0.54 }, { x: 0.821, y: 0.464, weight: 0.34 },
+  { x: 0.893, y: 0.464, weight: 0.19 }, { x: 0.107, y: 0.536, weight: 0.22 }, { x: 0.178, y: 0.536, weight: 0.37 },
+  { x: 0.25, y: 0.536, weight: 0.55 }, { x: 0.321, y: 0.536, weight: 0.31 }, { x: 0.393, y: 0.536, weight: 0.13 },
+  { x: 0.464, y: 0.536, weight: 0.16 }, { x: 0.536, y: 0.536, weight: 0.16 }, { x: 0.607, y: 0.536, weight: 0.13 },
+  { x: 0.678, y: 0.536, weight: 0.3 }, { x: 0.75, y: 0.536, weight: 0.53 }, { x: 0.821, y: 0.536, weight: 0.36 },
+  { x: 0.893, y: 0.536, weight: 0.2 }, { x: 0.036, y: 0.607, weight: 0.13 }, { x: 0.107, y: 0.607, weight: 0.3 },
+  { x: 0.178, y: 0.607, weight: 0.24 }, { x: 0.25, y: 0.607, weight: 0.28 }, { x: 0.321, y: 0.607, weight: 0.32 },
+  { x: 0.393, y: 0.607, weight: 0.26 }, { x: 0.464, y: 0.607, weight: 0.14 }, { x: 0.536, y: 0.607, weight: 0.14 },
+  { x: 0.607, y: 0.607, weight: 0.26 }, { x: 0.678, y: 0.607, weight: 0.32 }, { x: 0.75, y: 0.607, weight: 0.28 },
+  { x: 0.821, y: 0.607, weight: 0.24 }, { x: 0.893, y: 0.607, weight: 0.3 }, { x: 0.964, y: 0.607, weight: 0.14 },
+  { x: 0.036, y: 0.678, weight: 0.34 }, { x: 0.107, y: 0.678, weight: 0.66 }, { x: 0.178, y: 0.678, weight: 0.3 },
+  { x: 0.25, y: 0.678, weight: 0.18 }, { x: 0.321, y: 0.678, weight: 0.26 }, { x: 0.393, y: 0.678, weight: 0.34 },
+  { x: 0.464, y: 0.678, weight: 0.24 }, { x: 0.536, y: 0.678, weight: 0.24 }, { x: 0.607, y: 0.678, weight: 0.34 },
+  { x: 0.678, y: 0.678, weight: 0.26 }, { x: 0.75, y: 0.678, weight: 0.18 }, { x: 0.821, y: 0.678, weight: 0.3 },
+  { x: 0.893, y: 0.678, weight: 0.66 }, { x: 0.964, y: 0.678, weight: 0.34 }, { x: 0.036, y: 0.75, weight: 0.36 },
+  { x: 0.107, y: 0.75, weight: 0.74 }, { x: 0.178, y: 0.75, weight: 0.3 }, { x: 0.321, y: 0.75, weight: 0.16 },
+  { x: 0.393, y: 0.75, weight: 0.42 }, { x: 0.464, y: 0.75, weight: 0.68 }, { x: 0.536, y: 0.75, weight: 0.68 },
+  { x: 0.607, y: 0.75, weight: 0.42 }, { x: 0.678, y: 0.75, weight: 0.16 }, { x: 0.821, y: 0.75, weight: 0.3 },
+  { x: 0.893, y: 0.75, weight: 0.74 }, { x: 0.964, y: 0.75, weight: 0.36 }, { x: 0.036, y: 0.821, weight: 0.18 },
+  { x: 0.107, y: 0.821, weight: 0.34 }, { x: 0.321, y: 0.821, weight: 0.18 }, { x: 0.393, y: 0.821, weight: 0.58 },
+  { x: 0.464, y: 0.821, weight: 1 }, { x: 0.536, y: 0.821, weight: 1 }, { x: 0.607, y: 0.821, weight: 0.58 },
+  { x: 0.678, y: 0.821, weight: 0.18 }, { x: 0.893, y: 0.821, weight: 0.34 }, { x: 0.964, y: 0.821, weight: 0.16 },
+  { x: 0.393, y: 0.893, weight: 0.34 }, { x: 0.464, y: 0.893, weight: 0.62 }, { x: 0.536, y: 0.893, weight: 0.62 },
+  { x: 0.607, y: 0.893, weight: 0.34 }, { x: 0.464, y: 0.964, weight: 0.14 }, { x: 0.536, y: 0.964, weight: 0.14 },
 ];
 
 // --- Shot-zone coverage (non-overlapping partition of the half court) ----------

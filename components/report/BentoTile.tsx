@@ -33,6 +33,12 @@ export interface BentoTileProps {
    */
   contentKey?: Key;
   /**
+   * Reveal order within the grid. Drives a small, capped stagger so the tiles
+   * cascade in a deliberate reading-order sequence (hero first, then across and
+   * down) rather than every tile animating at once. Default 0.
+   */
+  index?: number;
+  /**
    * When true the body becomes a flush, edge-to-edge surface (used by spatial
    * tiles so the pitch bleeds to the tile border). Default false keeps padding.
    */
@@ -43,11 +49,10 @@ export interface BentoTileProps {
   className?: string;
 }
 
-const cardMotion = {
-  initial: { opacity: 0, y: 12 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const },
-};
+// Per-tile entrance stagger so the grid cascades in a deliberate reading order
+// rather than every tile arriving at once. Capped so the full sweep stays brisk.
+const STAGGER_STEP = 0.08; // s per tile
+const STAGGER_CAP = 0.42; // s, so the full cascade never feels slow
 
 export default function BentoTile({
   eyebrow,
@@ -55,21 +60,44 @@ export default function BentoTile({
   meta,
   children,
   contentKey,
+  index = 0,
   flushBody = false,
   hero = false,
   className,
 }: BentoTileProps) {
   const prefersReduced = useReducedMotion();
+
+  // The tile FRAME reveals in a precise order driven by `index` (a small, capped
+  // stagger → a deliberate reading-order cascade, never random). The entrance is
+  // a COMPOSITOR-driven CSS keyframe (`.bento-tile-in`), NOT a JS/rAF animation,
+  // chosen deliberately for two guarantees:
+  //  1. SSR / no-JS / reduced-motion safe. The tile's resting state is full
+  //     opacity; the keyframe only animates FROM hidden, so if it never runs the
+  //     tile still reads fully visible. The frame can therefore NEVER permanently
+  //     gate the viz inside it. (The global prefers-reduced-motion rule in
+  //     globals.css collapses the duration, so reduced-motion users get an
+  //     instant snap to the visible resting state.)
+  //  2. It does not fight the child viz. Each viz owns its OWN useInView draw-on;
+  //     the frame entrance is a separate, additive CSS layer that always settles
+  //     visible, so the viz animate independently when first seen.
+  const delay = Math.min(index * STAGGER_STEP, STAGGER_CAP);
+
   return (
     <motion.section
+      // `layout` keeps the grid morph smooth when tiles reflow across sport
+      // changes. The entrance itself is CSS (see `.bento-tile-in` below), kept
+      // off framer so the resting state is always visible without rAF.
       layout
-      {...cardMotion}
       className={clsx(
         'group relative flex flex-col overflow-hidden rounded-2xl border bg-surface',
         hero ? 'border-accent1/30' : 'border-border',
         'transition-colors hover:border-border/70',
+        // Reduced motion: skip the entrance class entirely (the tile renders at
+        // its visible resting state). Otherwise play the staggered CSS rise.
+        !prefersReduced && 'bento-tile-in',
         className,
       )}
+      style={prefersReduced ? undefined : { animationDelay: `${delay}s` }}
     >
       {(eyebrow || title || meta) && (
         <header className="relative flex items-start justify-between gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
@@ -96,16 +124,18 @@ export default function BentoTile({
         )}
       >
         {contentKey !== undefined ? (
-          // Keyed body fade-in: changing `contentKey` remounts this subtree, so
-          // React swaps in the new children immediately and framer-motion plays
-          // a quick fade-in (initial → animate). No AnimatePresence / exit, so
-          // there's nothing that can stall the swap. Reduced-motion → instant.
+          // Keyed body fade: changing `contentKey` (the active sport) remounts
+          // this subtree, so React swaps in the new children immediately and
+          // framer-motion plays a quick fade. No AnimatePresence / exit, so the
+          // swap can never stall. `animate` always targets opacity 1, so even
+          // mid-flight the body resolves visible, so it never gates the viz.
+          // Reduced-motion → instant swap.
           <motion.div
             key={contentKey}
             className="flex min-h-0 flex-1 flex-col"
             initial={prefersReduced ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: prefersReduced ? 0 : 0.25, ease: 'easeOut' }}
+            transition={{ duration: prefersReduced ? 0 : 0.28, ease: 'easeOut' }}
           >
             {children}
           </motion.div>

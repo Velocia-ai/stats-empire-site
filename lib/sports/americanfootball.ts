@@ -30,44 +30,62 @@ const spray: SpatialPoint[] = [
   { x: 0.5, y: 0.4, outcome: 'make', label: 'Seam completion, 16 yds', value: 1 },
   { x: 0.3, y: 0.5, outcome: 'make', label: 'Screen pass, 7 yds', value: 1 },
   { x: 0.7, y: 0.44, outcome: 'neutral', label: 'Comeback, 8 yds', value: 1 },
+  { x: 0.42, y: 0.5, outcome: 'make', label: 'Drag route, 6 yds', value: 1 },
+  { x: 0.58, y: 0.42, outcome: 'make', label: 'Curl, 13 yds', value: 1 },
+  { x: 0.66, y: 0.54, outcome: 'neutral', label: 'Flat route, 3 yds', value: 1 },
   // Deep shots into opponent territory
   { x: 0.78, y: 0.24, outcome: 'winner', label: 'Deep post, 38 yds', value: 1 },
   { x: 0.24, y: 0.28, outcome: 'error', label: 'Overthrown go route', value: 0 },
   { x: 0.58, y: 0.3, outcome: 'make', label: 'Dig route, 19 yds', value: 1 },
+  { x: 0.32, y: 0.26, outcome: 'make', label: 'Deep crosser, 27 yds', value: 1 },
+  { x: 0.7, y: 0.32, outcome: 'make', label: 'Corner route, 22 yds', value: 1 },
   // Red zone and scores
   { x: 0.5, y: 0.08, outcome: 'winner', label: 'TD pass, fade', value: 6 },
   { x: 0.42, y: 0.1, outcome: 'winner', label: 'TD run, QB keep', value: 6 },
   { x: 0.6, y: 0.13, outcome: 'make', label: 'Red-zone slant, 8 yds', value: 1 },
   { x: 0.46, y: 0.16, outcome: 'error', label: 'Goal-line INT', value: 0 },
+  { x: 0.56, y: 0.18, outcome: 'make', label: 'Fade-stop, 12 yds', value: 1 },
   // Scrambles and runs near own territory
   { x: 0.52, y: 0.66, outcome: 'make', label: 'Scramble, 12 yds', value: 1 },
   { x: 0.4, y: 0.72, outcome: 'make', label: 'Designed QB run, 6 yds', value: 1 },
   { x: 0.6, y: 0.7, outcome: 'neutral', label: 'Handoff, 3 yds', value: 1 },
   { x: 0.34, y: 0.78, outcome: 'error', label: 'Sacked, -7 yds', value: 0 },
+  { x: 0.62, y: 0.62, outcome: 'make', label: 'Zone-read keeper, 9 yds', value: 1 },
 ];
 
 // --- Field-position density heatmap (where the offense operated) ----------------
-// 55 cells on a regular grid; gaussian-mixture weights peak just past midfield in
-// opponent territory with red-zone and own-territory lobes.
+// 85 cells on a regular grid spanning the gridiron width; gaussian-mixture weights
+// peak just past midfield in opponent territory (the hot core) with a warm
+// red-zone lobe up top and a cooler own-territory lobe down low.
 const heatmap: HeatCell[] = [
-  { x: 0.346, y: 0.1, weight: 0.18 }, { x: 0.5, y: 0.1, weight: 0.34 }, { x: 0.654, y: 0.1, weight: 0.2 },
+  { x: 0.5, y: 0.04, weight: 0.14 }, { x: 0.423, y: 0.04, weight: 0.1 }, { x: 0.577, y: 0.04, weight: 0.1 },
+  { x: 0.346, y: 0.1, weight: 0.18 }, { x: 0.423, y: 0.1, weight: 0.26 }, { x: 0.5, y: 0.1, weight: 0.34 },
+  { x: 0.577, y: 0.1, weight: 0.26 }, { x: 0.654, y: 0.1, weight: 0.2 }, { x: 0.27, y: 0.18, weight: 0.16 },
   { x: 0.346, y: 0.18, weight: 0.22 }, { x: 0.423, y: 0.18, weight: 0.31 }, { x: 0.5, y: 0.18, weight: 0.4 },
-  { x: 0.577, y: 0.18, weight: 0.33 }, { x: 0.654, y: 0.18, weight: 0.21 }, { x: 0.27, y: 0.28, weight: 0.19 },
-  { x: 0.346, y: 0.28, weight: 0.34 }, { x: 0.423, y: 0.28, weight: 0.5 }, { x: 0.5, y: 0.28, weight: 0.58 },
-  { x: 0.577, y: 0.28, weight: 0.46 }, { x: 0.654, y: 0.28, weight: 0.3 }, { x: 0.73, y: 0.28, weight: 0.18 },
-  { x: 0.231, y: 0.38, weight: 0.21 }, { x: 0.346, y: 0.38, weight: 0.49 }, { x: 0.423, y: 0.38, weight: 0.72 },
-  { x: 0.5, y: 0.38, weight: 0.84 }, { x: 0.577, y: 0.38, weight: 0.68 }, { x: 0.654, y: 0.38, weight: 0.44 },
-  { x: 0.73, y: 0.38, weight: 0.24 }, { x: 0.231, y: 0.48, weight: 0.24 }, { x: 0.346, y: 0.48, weight: 0.55 },
+  { x: 0.577, y: 0.18, weight: 0.33 }, { x: 0.654, y: 0.18, weight: 0.24 }, { x: 0.73, y: 0.18, weight: 0.15 },
+  { x: 0.231, y: 0.28, weight: 0.16 }, { x: 0.27, y: 0.28, weight: 0.19 }, { x: 0.346, y: 0.28, weight: 0.34 },
+  { x: 0.423, y: 0.28, weight: 0.5 }, { x: 0.5, y: 0.28, weight: 0.58 }, { x: 0.577, y: 0.28, weight: 0.46 },
+  { x: 0.654, y: 0.28, weight: 0.3 }, { x: 0.73, y: 0.28, weight: 0.18 }, { x: 0.769, y: 0.28, weight: 0.14 },
+  { x: 0.192, y: 0.38, weight: 0.15 }, { x: 0.231, y: 0.38, weight: 0.21 }, { x: 0.346, y: 0.38, weight: 0.49 },
+  { x: 0.423, y: 0.38, weight: 0.72 }, { x: 0.5, y: 0.38, weight: 0.84 }, { x: 0.577, y: 0.38, weight: 0.68 },
+  { x: 0.654, y: 0.38, weight: 0.44 }, { x: 0.73, y: 0.38, weight: 0.24 }, { x: 0.808, y: 0.38, weight: 0.14 },
+  { x: 0.192, y: 0.48, weight: 0.17 }, { x: 0.231, y: 0.48, weight: 0.24 }, { x: 0.346, y: 0.48, weight: 0.55 },
   { x: 0.423, y: 0.48, weight: 0.86 }, { x: 0.5, y: 0.48, weight: 1 }, { x: 0.577, y: 0.48, weight: 0.83 },
-  { x: 0.654, y: 0.48, weight: 0.52 }, { x: 0.769, y: 0.48, weight: 0.25 }, { x: 0.231, y: 0.58, weight: 0.2 },
-  { x: 0.346, y: 0.58, weight: 0.46 }, { x: 0.423, y: 0.58, weight: 0.7 }, { x: 0.5, y: 0.58, weight: 0.82 },
-  { x: 0.577, y: 0.58, weight: 0.66 }, { x: 0.654, y: 0.58, weight: 0.42 }, { x: 0.769, y: 0.58, weight: 0.21 },
+  { x: 0.654, y: 0.48, weight: 0.52 }, { x: 0.769, y: 0.48, weight: 0.25 }, { x: 0.808, y: 0.48, weight: 0.15 },
+  { x: 0.192, y: 0.58, weight: 0.14 }, { x: 0.231, y: 0.58, weight: 0.2 }, { x: 0.346, y: 0.58, weight: 0.46 },
+  { x: 0.423, y: 0.58, weight: 0.7 }, { x: 0.5, y: 0.58, weight: 0.82 }, { x: 0.577, y: 0.58, weight: 0.66 },
+  { x: 0.654, y: 0.58, weight: 0.42 }, { x: 0.769, y: 0.58, weight: 0.21 }, { x: 0.27, y: 0.68, weight: 0.18 },
   { x: 0.346, y: 0.68, weight: 0.32 }, { x: 0.423, y: 0.68, weight: 0.5 }, { x: 0.5, y: 0.68, weight: 0.6 },
-  { x: 0.577, y: 0.68, weight: 0.49 }, { x: 0.654, y: 0.68, weight: 0.3 }, { x: 0.346, y: 0.78, weight: 0.2 },
-  { x: 0.423, y: 0.78, weight: 0.31 }, { x: 0.5, y: 0.78, weight: 0.38 }, { x: 0.577, y: 0.78, weight: 0.3 },
-  { x: 0.654, y: 0.78, weight: 0.18 }, { x: 0.423, y: 0.86, weight: 0.16 }, { x: 0.5, y: 0.86, weight: 0.22 },
-  { x: 0.577, y: 0.86, weight: 0.15 }, { x: 0.5, y: 0.92, weight: 0.12 }, { x: 0.423, y: 0.92, weight: 0.09 },
-  { x: 0.577, y: 0.92, weight: 0.09 }, { x: 0.5, y: 0.04, weight: 0.14 }, { x: 0.5, y: 0.96, weight: 0.07 },
+  { x: 0.577, y: 0.68, weight: 0.49 }, { x: 0.654, y: 0.68, weight: 0.3 }, { x: 0.73, y: 0.68, weight: 0.17 },
+  { x: 0.27, y: 0.78, weight: 0.14 }, { x: 0.346, y: 0.78, weight: 0.2 }, { x: 0.423, y: 0.78, weight: 0.31 },
+  { x: 0.5, y: 0.78, weight: 0.38 }, { x: 0.577, y: 0.78, weight: 0.3 }, { x: 0.654, y: 0.78, weight: 0.18 },
+  { x: 0.346, y: 0.86, weight: 0.12 }, { x: 0.423, y: 0.86, weight: 0.16 }, { x: 0.5, y: 0.86, weight: 0.22 },
+  { x: 0.577, y: 0.86, weight: 0.15 }, { x: 0.654, y: 0.86, weight: 0.11 }, { x: 0.423, y: 0.92, weight: 0.09 },
+  { x: 0.5, y: 0.92, weight: 0.12 }, { x: 0.577, y: 0.92, weight: 0.09 }, { x: 0.5, y: 0.96, weight: 0.07 },
+  { x: 0.27, y: 0.38, weight: 0.32 }, { x: 0.73, y: 0.48, weight: 0.34 }, { x: 0.27, y: 0.48, weight: 0.34 },
+  { x: 0.73, y: 0.58, weight: 0.28 }, { x: 0.27, y: 0.58, weight: 0.28 }, { x: 0.808, y: 0.58, weight: 0.13 },
+  { x: 0.346, y: 0.92, weight: 0.07 }, { x: 0.654, y: 0.92, weight: 0.07 }, { x: 0.423, y: 0.96, weight: 0.05 },
+  { x: 0.577, y: 0.96, weight: 0.05 }, { x: 0.5, y: 0.14, weight: 0.37 }, { x: 0.5, y: 0.53, weight: 0.92 },
 ];
 
 // --- Red zone / Opp territory / Midfield / Own territory zone coverage ----------

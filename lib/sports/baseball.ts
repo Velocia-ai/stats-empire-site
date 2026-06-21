@@ -19,34 +19,45 @@ import type {
 // --- Spray chart: where batted balls landed (home plate bottom-center) --------
 // value carries exit velocity (mph) so marker size encodes how hard it was hit.
 const spray: SpatialPoint[] = [
-  // Pulled line drives to left field (RH pull side)
+  // Pulled line drives to left field (RH pull side, the hot zone)
   { x: 0.22, y: 0.34, outcome: 'winner', label: '2B, line drive, LF gap', value: 104.2 },
   { x: 0.18, y: 0.41, outcome: 'make', label: 'Single, LF', value: 91.8 },
   { x: 0.27, y: 0.28, outcome: 'winner', label: 'HR, pulled, 412 ft', value: 108.6 },
   { x: 0.31, y: 0.52, outcome: 'neutral', label: 'Flyout, shallow LF', value: 82.4 },
   { x: 0.24, y: 0.46, outcome: 'make', label: 'Single, LF line', value: 94.1 },
+  { x: 0.2, y: 0.3, outcome: 'winner', label: '2B, LF corner, 408 ft', value: 106.3 },
+  { x: 0.29, y: 0.38, outcome: 'make', label: 'Single, LF gap', value: 98.4 },
+  { x: 0.16, y: 0.5, outcome: 'neutral', label: 'Flyout, LF line', value: 85.7 },
+  { x: 0.34, y: 0.44, outcome: 'make', label: 'Single, through SS', value: 92.6 },
   // Up the middle
   { x: 0.5, y: 0.24, outcome: 'winner', label: 'HR, center, 419 ft', value: 110.1 },
   { x: 0.48, y: 0.46, outcome: 'make', label: 'Single, up the middle', value: 96.3 },
   { x: 0.53, y: 0.58, outcome: 'neutral', label: 'Lineout, CF', value: 99.7 },
   { x: 0.5, y: 0.78, outcome: 'error', label: 'Groundout, 6-3', value: 84.1 },
+  { x: 0.46, y: 0.32, outcome: 'winner', label: '2B, CF gap, 405 ft', value: 102.9 },
+  { x: 0.52, y: 0.5, outcome: 'make', label: 'Single, CF', value: 95.0 },
   // Opposite field to right
   { x: 0.7, y: 0.39, outcome: 'make', label: 'Double, RF line', value: 95.5 },
   { x: 0.76, y: 0.47, outcome: 'make', label: 'Single, opposite RF', value: 88.9 },
   { x: 0.68, y: 0.55, outcome: 'neutral', label: 'Flyout, RF', value: 86.2 },
   { x: 0.82, y: 0.33, outcome: 'winner', label: 'Triple, RF corner', value: 101.7 },
   { x: 0.64, y: 0.43, outcome: 'make', label: 'Single, RCF gap', value: 97.6 },
+  { x: 0.74, y: 0.52, outcome: 'neutral', label: 'Lineout, RF', value: 90.3 },
   // Infield / weak contact
   { x: 0.44, y: 0.82, outcome: 'error', label: 'Groundout, 4-3', value: 78.5 },
   { x: 0.58, y: 0.8, outcome: 'neutral', label: 'Popout, 2B', value: 71.3 },
   { x: 0.4, y: 0.86, outcome: 'error', label: 'Weak grounder, pitcher', value: 64.9 },
   { x: 0.6, y: 0.66, outcome: 'make', label: 'Infield single, RF hole', value: 89.4 },
+  { x: 0.36, y: 0.8, outcome: 'error', label: 'Groundout, 5-3', value: 80.2 },
 ];
 
 // --- Batted-ball location heatmap (spray density, pull-side hot) ---------------
-// 78 cells on a regular grid, masked to the fair-territory fan; gaussian-mixture
-// weights concentrate on the LF pull gap with a center spike and oppo RF lobe.
+// 90 cells on a regular grid, masked to the fair-territory fan; gaussian-mixture
+// weights concentrate on the LF pull gap (hot core) with a center spike and an
+// oppo RF lobe, fading to weak-contact infield dribblers near home plate.
 const heatmap: HeatCell[] = [
+  { x: 0.25, y: 0.107, weight: 0.16 }, { x: 0.321, y: 0.107, weight: 0.22 }, { x: 0.393, y: 0.107, weight: 0.24 },
+  { x: 0.464, y: 0.107, weight: 0.24 }, { x: 0.536, y: 0.107, weight: 0.21 }, { x: 0.607, y: 0.107, weight: 0.15 },
   { x: 0.178, y: 0.178, weight: 0.21 }, { x: 0.25, y: 0.178, weight: 0.32 }, { x: 0.321, y: 0.178, weight: 0.38 },
   { x: 0.393, y: 0.178, weight: 0.4 }, { x: 0.464, y: 0.178, weight: 0.41 }, { x: 0.536, y: 0.178, weight: 0.37 },
   { x: 0.607, y: 0.178, weight: 0.28 }, { x: 0.678, y: 0.178, weight: 0.18 }, { x: 0.107, y: 0.25, weight: 0.2 },
@@ -57,22 +68,24 @@ const heatmap: HeatCell[] = [
   { x: 0.25, y: 0.321, weight: 0.91 }, { x: 0.321, y: 0.321, weight: 1 }, { x: 0.393, y: 0.321, weight: 0.94 },
   { x: 0.464, y: 0.321, weight: 0.86 }, { x: 0.536, y: 0.321, weight: 0.78 }, { x: 0.607, y: 0.321, weight: 0.67 },
   { x: 0.678, y: 0.321, weight: 0.58 }, { x: 0.75, y: 0.321, weight: 0.48 }, { x: 0.821, y: 0.321, weight: 0.32 },
-  { x: 0.107, y: 0.393, weight: 0.26 }, { x: 0.178, y: 0.393, weight: 0.57 }, { x: 0.25, y: 0.393, weight: 0.86 },
-  { x: 0.321, y: 0.393, weight: 0.97 }, { x: 0.393, y: 0.393, weight: 0.9 }, { x: 0.464, y: 0.393, weight: 0.81 },
-  { x: 0.536, y: 0.393, weight: 0.74 }, { x: 0.607, y: 0.393, weight: 0.71 }, { x: 0.678, y: 0.393, weight: 0.7 },
-  { x: 0.75, y: 0.393, weight: 0.61 }, { x: 0.821, y: 0.393, weight: 0.42 }, { x: 0.893, y: 0.393, weight: 0.2 },
-  { x: 0.178, y: 0.464, weight: 0.37 }, { x: 0.25, y: 0.464, weight: 0.59 }, { x: 0.321, y: 0.464, weight: 0.73 },
-  { x: 0.393, y: 0.464, weight: 0.74 }, { x: 0.464, y: 0.464, weight: 0.68 }, { x: 0.536, y: 0.464, weight: 0.66 },
-  { x: 0.607, y: 0.464, weight: 0.69 }, { x: 0.678, y: 0.464, weight: 0.69 }, { x: 0.75, y: 0.464, weight: 0.57 },
-  { x: 0.821, y: 0.464, weight: 0.37 }, { x: 0.893, y: 0.464, weight: 0.17 }, { x: 0.178, y: 0.536, weight: 0.17 },
-  { x: 0.25, y: 0.536, weight: 0.31 }, { x: 0.321, y: 0.536, weight: 0.44 }, { x: 0.393, y: 0.536, weight: 0.51 },
-  { x: 0.464, y: 0.536, weight: 0.51 }, { x: 0.536, y: 0.536, weight: 0.52 }, { x: 0.607, y: 0.536, weight: 0.56 },
-  { x: 0.678, y: 0.536, weight: 0.53 }, { x: 0.75, y: 0.536, weight: 0.39 }, { x: 0.821, y: 0.536, weight: 0.23 },
+  { x: 0.893, y: 0.321, weight: 0.17 }, { x: 0.107, y: 0.393, weight: 0.26 }, { x: 0.178, y: 0.393, weight: 0.57 },
+  { x: 0.25, y: 0.393, weight: 0.86 }, { x: 0.321, y: 0.393, weight: 0.97 }, { x: 0.393, y: 0.393, weight: 0.9 },
+  { x: 0.464, y: 0.393, weight: 0.81 }, { x: 0.536, y: 0.393, weight: 0.74 }, { x: 0.607, y: 0.393, weight: 0.71 },
+  { x: 0.678, y: 0.393, weight: 0.7 }, { x: 0.75, y: 0.393, weight: 0.61 }, { x: 0.821, y: 0.393, weight: 0.42 },
+  { x: 0.893, y: 0.393, weight: 0.2 }, { x: 0.107, y: 0.464, weight: 0.18 }, { x: 0.178, y: 0.464, weight: 0.37 },
+  { x: 0.25, y: 0.464, weight: 0.59 }, { x: 0.321, y: 0.464, weight: 0.73 }, { x: 0.393, y: 0.464, weight: 0.74 },
+  { x: 0.464, y: 0.464, weight: 0.68 }, { x: 0.536, y: 0.464, weight: 0.66 }, { x: 0.607, y: 0.464, weight: 0.69 },
+  { x: 0.678, y: 0.464, weight: 0.69 }, { x: 0.75, y: 0.464, weight: 0.57 }, { x: 0.821, y: 0.464, weight: 0.37 },
+  { x: 0.893, y: 0.464, weight: 0.17 }, { x: 0.178, y: 0.536, weight: 0.17 }, { x: 0.25, y: 0.536, weight: 0.31 },
+  { x: 0.321, y: 0.536, weight: 0.44 }, { x: 0.393, y: 0.536, weight: 0.51 }, { x: 0.464, y: 0.536, weight: 0.51 },
+  { x: 0.536, y: 0.536, weight: 0.52 }, { x: 0.607, y: 0.536, weight: 0.56 }, { x: 0.678, y: 0.536, weight: 0.53 },
+  { x: 0.75, y: 0.536, weight: 0.39 }, { x: 0.821, y: 0.536, weight: 0.23 }, { x: 0.25, y: 0.607, weight: 0.16 },
   { x: 0.321, y: 0.607, weight: 0.22 }, { x: 0.393, y: 0.607, weight: 0.29 }, { x: 0.464, y: 0.607, weight: 0.32 },
   { x: 0.536, y: 0.607, weight: 0.34 }, { x: 0.607, y: 0.607, weight: 0.35 }, { x: 0.678, y: 0.607, weight: 0.3 },
   { x: 0.75, y: 0.607, weight: 0.19 }, { x: 0.393, y: 0.678, weight: 0.2 }, { x: 0.464, y: 0.678, weight: 0.26 },
   { x: 0.536, y: 0.678, weight: 0.27 }, { x: 0.607, y: 0.678, weight: 0.23 }, { x: 0.393, y: 0.75, weight: 0.19 },
   { x: 0.464, y: 0.75, weight: 0.25 }, { x: 0.536, y: 0.75, weight: 0.26 }, { x: 0.607, y: 0.75, weight: 0.2 },
+  { x: 0.464, y: 0.821, weight: 0.15 }, { x: 0.536, y: 0.821, weight: 0.15 },
 ];
 
 // --- Fielding zone coverage (non-overlapping fan partition) --------------------
