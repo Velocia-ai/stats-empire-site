@@ -338,12 +338,14 @@ export default function TrajectoryLines({
               d={l.d}
               stroke="var(--color-bg)"
               strokeWidth={l.width + 2.4 * unit}
-              initial={{ pathLength: 0, strokeOpacity: 0 }}
-              animate={{ pathLength: 1, strokeOpacity: casingOpacity }}
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
               transition={{
                 pathLength: { duration: drawDur, ease: 'easeInOut', delay: i * stagger },
-                strokeOpacity: { duration: 0.3, delay: i * stagger },
               }}
+              // strokeOpacity is React-controlled (selection-driven), NOT framer,
+              // so a finished framer/WAAPI animation can never override the toggle.
+              style={{ strokeOpacity: casingOpacity, transition: 'stroke-opacity 0.25s ease' }}
             />
           ) : (
             <path
@@ -388,14 +390,20 @@ export default function TrajectoryLines({
               key={l.id}
               d={l.d}
               strokeWidth={restWidth}
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={{ pathLength: 1, opacity: restOpacity }}
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
               transition={{
                 pathLength: { duration: drawDur, ease: 'easeInOut', delay: i * stagger },
-                opacity: { duration: 0.3, delay: anyHover || !on ? 0 : i * stagger },
                 strokeWidth: { duration: 0.18 },
               }}
-              {...common}
+              stroke={common.stroke}
+              filter={common.filter}
+              markerEnd={common.markerEnd}
+              onMouseEnter={common.onMouseEnter}
+              onMouseLeave={common.onMouseLeave}
+              // opacity React-controlled (selection/hover), NOT framer, so toggling
+              // a kind reliably dims it (a finished framer animation cannot override).
+              style={{ ...common.style, opacity: restOpacity, transition: 'opacity 0.25s ease, stroke-width 0.18s ease' }}
             />
           ) : (
             <path
@@ -462,15 +470,14 @@ export default function TrajectoryLines({
               fill="var(--color-bg)"
               stroke={l.color}
               strokeWidth={2 * unit}
-              initial={shouldAnimate ? { opacity: 0, scale: 0.4 } : false}
-              animate={
-                shouldAnimate
-                  ? { opacity: dotOpacity, scale: 1 }
-                  : { opacity: dotOpacity }
-              }
+              initial={shouldAnimate ? { scale: 0.4 } : false}
+              animate={shouldAnimate ? { scale: 1 } : undefined}
+              // opacity React-controlled (selection-driven); only the pop scale is
+              // framer, so toggling a kind reliably dims its origin dot too.
               style={{
                 transformOrigin: `${l.start[0]}px ${l.start[1]}px`,
-                transition: shouldAnimate ? undefined : 'opacity 0.25s ease',
+                opacity: dotOpacity,
+                transition: 'opacity 0.25s ease',
               }}
               transition={
                 shouldAnimate
