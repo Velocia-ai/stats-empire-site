@@ -168,7 +168,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'pnr-snake',
     label: 'Pick-and-roll snake -> floater',
-    kind: 'Drive',
+    kind: 'Pick & roll',
     points: [[0.7, 0.42], [0.58, 0.52], [0.5, 0.66], [0.5, 0.78]],
     outcome: 'make',
     intensity: 0.66,
@@ -184,7 +184,7 @@ const trajectories: TrajectoryPath[] = [
   {
     id: 'drive-contested-miss',
     label: 'Contested drive -> blocked',
-    kind: 'Turnover',
+    kind: 'Blocked shot',
     points: [[0.36, 0.46], [0.4, 0.6], [0.46, 0.72], [0.52, 0.8]],
     outcome: 'miss',
     intensity: 0.46,

@@ -103,12 +103,12 @@ export default function BentoTile({
         <header className="relative flex items-start justify-between gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
           <div className="min-w-0">
             {eyebrow ? (
-              <p className="font-mono text-[0.6rem] font-medium uppercase tracking-[0.22em] text-accent1">
+              <p className="font-mono text-[0.6rem] font-medium uppercase tracking-[0.22em] text-accent1 lg:text-[0.6875rem]">
                 {eyebrow}
               </p>
             ) : null}
             {title ? (
-              <h3 className="mt-1 truncate font-display text-base font-semibold tracking-tight text-text sm:text-lg">
+              <h3 className="mt-1 truncate font-display text-base font-semibold tracking-tight text-text sm:text-lg lg:text-xl">
                 {title}
               </h3>
             ) : null}

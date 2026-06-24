@@ -182,16 +182,16 @@ export default function ReportBento({
           className="mb-12 flex flex-col gap-6 sm:mb-16 sm:flex-row sm:items-end sm:justify-between"
         >
           <div className="max-w-xl">
-            <p className="font-mono text-[0.7rem] font-medium uppercase tracking-[0.3em] text-accent1">
+            <p className="font-mono text-[0.7rem] font-medium uppercase tracking-[0.3em] text-accent1 lg:text-xs">
               What you get
             </p>
             <h2
               id="report-bento-heading"
-              className="mt-3 font-display font-bold leading-[1.1] tracking-tight text-text text-[clamp(1.75rem,5vw,3rem)]"
+              className="mt-3 font-display font-bold leading-[1.1] tracking-tight text-text text-[clamp(1.75rem,5vw,3.5rem)]"
             >
               A coach-ready report
             </h2>
-            <p className="mt-4 font-body text-sm leading-relaxed text-muted sm:text-base">
+            <p className="mt-4 font-body text-sm leading-relaxed text-muted sm:text-base lg:text-[1.0625rem]">
               Not a spreadsheet dump, a composed intelligence brief. Spatial maps,
               advanced metrics and momentum trends, tuned to {data.displayName.toLowerCase()}.
               Switch the sport and the whole report re-renders to match.
@@ -280,7 +280,11 @@ export default function ReportBento({
               }
               className="sm:col-span-1 lg:col-span-3"
             >
-              <SpatialStack pitch={pitch} minHeight={260}>
+              {/* A touch more floor height than the other spatial tiles so the
+                  interactive TrajectoryLines legend (top-left, scales with the
+                  viewBox) has room to breathe and its rows stay comfortably
+                  clickable without crowding the drawn paths. */}
+              <SpatialStack pitch={pitch} minHeight={300}>
                 <TrajectoryLines
                   paths={data.trajectories}
                   pitch={pitch}

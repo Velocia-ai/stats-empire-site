@@ -34,7 +34,7 @@ function StatValue({ value, active }: { value: MetricRow['value']; active: boole
     return (
       <span
         className="min-w-0 break-words font-bold tabular-nums text-text"
-        style={{ fontSize: 'clamp(1.5rem, 1rem + 2.4vw, 2.25rem)' }}
+        style={{ fontSize: 'clamp(1.5rem, 1rem + 2.4vw, 2.75rem)' }}
       >
         {value}
       </span>
@@ -44,7 +44,7 @@ function StatValue({ value, active }: { value: MetricRow['value']; active: boole
   return (
     <span
       className="min-w-0 break-words font-bold tabular-nums text-text"
-      style={{ fontSize: 'clamp(1.5rem, 1rem + 2.4vw, 2.25rem)' }}
+      style={{ fontSize: 'clamp(1.5rem, 1rem + 2.4vw, 2.75rem)' }}
     >
       {parsed.prefix}
       {formatCount(n, parsed.decimals as number)}
@@ -187,7 +187,7 @@ export function StatTiles({ rows }: StatTilesProps) {
             </span>
 
             <div className="relative flex h-full min-w-0 flex-col justify-between gap-3">
-              <p className="min-w-0 truncate font-mono text-[0.65rem] font-medium uppercase tracking-[0.16em] text-muted">
+              <p className="min-w-0 truncate font-mono text-[0.65rem] font-medium uppercase tracking-[0.16em] text-muted lg:text-xs">
                 {row.label}
               </p>
 
@@ -201,7 +201,7 @@ export function StatTiles({ rows }: StatTilesProps) {
                     <span aria-hidden="true" className="contents">
                       <StatValue value={row.value} active={active} />
                       {row.unit ? (
-                        <span className="font-mono text-sm font-medium text-muted">
+                        <span className="font-mono text-sm font-medium text-muted lg:text-base">
                           {row.unit}
                         </span>
                       ) : null}

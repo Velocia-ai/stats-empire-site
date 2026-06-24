@@ -46,7 +46,7 @@ function MetricValue({ value, active }: { value: MetricRow['value']; active: boo
   return (
     <span
       className="break-words font-mono font-semibold tabular-nums text-text"
-      style={{ fontSize: 'clamp(0.85rem, 0.6rem + 0.9vw, 1rem)' }}
+      style={{ fontSize: 'clamp(0.85rem, 0.6rem + 0.9vw, 1.15rem)' }}
     >
       {text}
     </span>
@@ -168,7 +168,7 @@ export function MetricTable({ rows, title }: MetricTableProps) {
     >
       {title ? (
         <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
-          <h3 className="min-w-0 truncate font-display text-sm font-semibold uppercase tracking-[0.14em] text-text">
+          <h3 className="min-w-0 truncate font-display text-sm font-semibold uppercase tracking-[0.14em] text-text lg:text-base">
             {title}
           </h3>
           <span className="shrink-0 font-mono text-[0.65rem] uppercase tracking-widest text-muted">
@@ -192,25 +192,25 @@ export function MetricTable({ rows, title }: MetricTableProps) {
           <tr className="border-b border-border">
             <th
               scope="col"
-              className="px-4 py-2 font-mono text-[0.6rem] font-medium uppercase tracking-widest text-muted sm:px-5"
+              className="px-4 py-2 font-mono text-[0.6rem] font-medium uppercase tracking-widest text-muted lg:text-[0.7rem] sm:px-5"
             >
               Metric
             </th>
             <th
               scope="col"
-              className="px-3 py-2 text-right font-mono text-[0.6rem] font-medium uppercase tracking-widest text-muted"
+              className="px-3 py-2 text-right font-mono text-[0.6rem] font-medium uppercase tracking-widest text-muted lg:text-[0.7rem]"
             >
               Value
             </th>
             <th
               scope="col"
-              className="hidden px-3 py-2 text-right font-mono text-[0.6rem] font-medium uppercase tracking-widest text-muted sm:table-cell"
+              className="hidden px-3 py-2 text-right font-mono text-[0.6rem] font-medium uppercase tracking-widest text-muted lg:text-[0.7rem] sm:table-cell"
             >
               Δ
             </th>
             <th
               scope="col"
-              className="hidden px-3 py-2 font-mono text-[0.6rem] font-medium uppercase tracking-widest text-muted md:table-cell"
+              className="hidden px-3 py-2 font-mono text-[0.6rem] font-medium uppercase tracking-widest text-muted lg:text-[0.7rem] md:table-cell"
             >
               Trend
             </th>
@@ -228,7 +228,7 @@ export function MetricTable({ rows, title }: MetricTableProps) {
                 {/* Label + optional progress bar */}
                 <th
                   scope="row"
-                  className="min-w-0 px-4 py-3 align-middle font-body text-sm font-medium text-text sm:px-5"
+                  className="min-w-0 px-4 py-3 align-middle font-body text-sm font-medium text-text sm:px-5 lg:text-base"
                 >
                   <span className="block break-words">{row.label}</span>
                   {showProgress ? (
@@ -247,7 +247,7 @@ export function MetricTable({ rows, title }: MetricTableProps) {
                     <span aria-hidden="true" className="contents">
                       <MetricValue value={row.value} active={active} />
                       {row.unit ? (
-                        <span className="font-mono text-[0.7rem] text-muted">{row.unit}</span>
+                        <span className="font-mono text-[0.7rem] text-muted lg:text-xs">{row.unit}</span>
                       ) : null}
                     </span>
                   </span>

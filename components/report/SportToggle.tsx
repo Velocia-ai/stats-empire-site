@@ -68,7 +68,13 @@ export default function SportToggle({
       role="radiogroup"
       aria-label="Select sport"
       className={clsx(
-        'inline-flex flex-wrap items-center gap-1 rounded-full border border-border bg-surface p-1',
+        // Mobile: single row that scrolls horizontally if the 5 segments
+        // overflow (no wrap, so BASEBALL never drops to a second line).
+        // Desktop (sm+): one clean row, never scrolls, tightened gap.
+        'inline-flex max-w-full flex-nowrap items-center gap-0.5 overflow-x-auto rounded-full border border-border bg-surface p-1',
+        'sm:gap-1 sm:overflow-visible',
+        // Hide the mobile scrollbar (Firefox + WebKit) for a tidy pill.
+        '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
         className,
       )}
     >
@@ -88,7 +94,10 @@ export default function SportToggle({
             onClick={() => onChange(sport.key)}
             onKeyDown={(e) => handleKeyDown(e, i)}
             className={clsx(
-              'relative isolate inline-flex min-h-[44px] items-center rounded-full px-4 font-mono text-[0.7rem] font-semibold uppercase tracking-[0.12em] transition-colors sm:px-4 sm:text-xs',
+              // shrink-0 + whitespace-nowrap: each segment keeps its label on
+              // one line and never compresses. Desktop tightens padding and
+              // trims tracking/font so all 5 sit comfortably on a single row.
+              'relative isolate inline-flex min-h-[44px] shrink-0 items-center justify-center whitespace-nowrap rounded-full px-3 font-mono text-[0.7rem] font-semibold uppercase tracking-[0.1em] transition-colors sm:px-3 sm:text-[0.7rem] sm:tracking-[0.08em]',
               selected ? 'text-bg' : 'text-muted hover:text-text',
             )}
           >

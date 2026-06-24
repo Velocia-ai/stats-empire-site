@@ -5,23 +5,34 @@
 // Draws smooth, curved, *directional* paths between sequences of points:
 // baseball hit arcs, American football pass/run lines, basketball drives, tennis
 // rallies, soccer pass-network edges. Each play reads on its own:
-//   - colour buckets the play by sentiment (positive/winner = lime,
-//     shot/goal = orange, error/turnover/neutral = muted), while the in-SVG
-//     LEGEND lists the SPORT-SPECIFIC play names actually present (tennis
-//     "Forehand / Backhand / Winner", soccer "Pass / Through ball / Cross",
-//     etc.) via each path's `kind`, falling back to its outcome bucket,
-//   - a hollow ORIGIN dot marks where the play starts,
-//     a triangular ARROWHEAD marks where it ends, so direction is unambiguous,
-//   - `intensity` drives stroke weight + opacity, so volume/quality read at a
-//     glance, and the single most important play is LABELLED in place.
+//   - COLOUR ENCODES THE PLAY `kind` (NOT outcome sentiment). The distinct
+//     sport-specific kinds present (tennis "Forehand winner / Serve / Volley",
+//     soccer "Pass / Through ball / Cross", football "Deep pass / Sack / Run",
+//     etc.) are each assigned one stable, visually-distinct hue from a
+//     theme-harmonized categorical palette. A line, its arrowhead, its origin
+//     dot and its legend swatch all share that one colour, so you can tell every
+//     kind apart at a glance.
+//   - a hollow ORIGIN dot marks where the play starts and a triangular
+//     ARROWHEAD marks where it ends, so direction is unambiguous,
+//   - `intensity` drives stroke weight + opacity so volume/quality read at a
+//     glance.
+//
+// INTERACTIVE LEGEND: the legend rows are real, keyboard-accessible toggle
+// buttons (role="checkbox" / aria-checked). Every kind is ON by default.
+// Clicking a kind toggles ONLY that kind, so the viewer can isolate one play
+// type ("Forehand winner") or select several to compare; de-selected kinds dim
+// right out. An "All" control resets to everything on, and is also offered as a
+// "Show only X" affordance whenever exactly one kind is left active. Hovering a
+// legend row (or a line) highlights that kind and surfaces its label.
 //
 // d3 generates the path `d` strings (line + curve); React renders them. When
 // `animate` is on AND the chart scrolls into view, framer-motion traces each
 // stroke ON in sequence (staggered) with a bright travelling head riding the
-// leading edge, then seats the arrowhead. It's reduced-motion-safe: if the user
-// prefers reduced motion, paths render fully drawn with no animation and no head.
+// leading edge. Lines ALWAYS settle fully visible (the draw-on only animates
+// pathLength/opacity in, never out). Reduced-motion-safe: prefers-reduced-motion
+// renders everything fully drawn with no animation and no head.
 
-import { useId, useMemo, useRef } from 'react';
+import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { line, curveCatmullRom } from 'd3-shape';
 import { motion, useInView, useReducedMotion } from 'framer-motion';
 import type { Outcome, PitchType, TrajectoryPath } from '@/lib/types';
@@ -38,77 +49,85 @@ export interface TrajectoryLinesProps {
   className?: string;
 }
 
-// The three colour buckets a play can carry. Colour stays sentiment-driven so
-// it is *categorical and legible*, not a gradient: positive/winner reads lime,
-// shot/goal reads orange, error/turnover/neutral reads muted.
-type Sentiment = 'positive' | 'shot' | 'muted';
+// --- Categorical palette -----------------------------------------------------
+//
+// A fixed, deterministic set of ~10 visually distinct hues, ordered so adjacent
+// kinds never read as the same colour. Tuned to sit on the dark Court Vision
+// backgrounds (all themes use a near-black bg) with enough saturation/lightness
+// to stay legible against the pitch and against each other. Hues are spaced
+// around the wheel (lime, cyan, sky, violet, magenta, amber, orange, teal,
+// warm-red, green) so even 8+ kinds in one sport stay tellable apart.
+//
+// The FIRST slot uses the live theme accent so the chart always feels keyed to
+// the active theme; the rest are explicit hex so they never collapse onto each
+// other when a theme swaps its accents.
+const PALETTE: readonly string[] = [
+  'var(--color-accent1)', // theme primary (lime / lime / green)
+  '#22d3ee', // cyan
+  '#60a5fa', // sky blue
+  '#a78bfa', // violet
+  '#f472b6', // magenta / pink
+  '#fbbf24', // amber
+  '#fb923c', // orange
+  '#2dd4bf', // teal
+  '#f87171', // warm red
+  '#4ade80', // green
+];
 
-const COLOR_BY_SENTIMENT: Record<Sentiment, string> = {
-  positive: 'var(--color-accent1)',
-  shot: 'var(--color-accent2)',
-  muted: 'var(--color-muted)',
-};
-
-// Outcome → colour sentiment. `winner` is a scored shot/goal, `make` a
-// completed/positive build-up action, everything else (miss / error / neutral /
-// undefined) reads as muted. This matches SprayChart's accent palette.
-function sentimentFor(outcome: Outcome | undefined): Sentiment {
-  switch (outcome) {
-    case 'winner':
-      return 'shot';
-    case 'make':
-      return 'positive';
-    default:
-      // 'miss' | 'error' | 'neutral' | undefined
-      return 'muted';
-  }
-}
-
-// A legend row: one distinct sport-specific `kind` (e.g. tennis "Forehand",
-// soccer "Through ball"), coloured by the sentiment of the paths carrying it.
-interface LegendEntry {
-  /** Stable key for React + marker ids. */
-  key: string;
-  /** Sport-specific play name shown in the legend and on arrowheads. */
-  label: string;
-  sentiment: Sentiment;
-  color: string;
-}
-
-// Fallback labels when a path has no `kind`, so the legend still reads in plain
-// language rather than blanks. Keyed by sentiment bucket.
-const FALLBACK_LABEL: Record<Sentiment, string> = {
-  positive: 'Completed',
-  shot: 'Shot / Goal',
-  muted: 'Incomplete',
-};
-
-// Sanitize a kind label into an id-safe token for marker/def ids.
+// Sanitize a kind label into an id-safe token for marker/def ids + React keys.
 function slug(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'kind';
 }
 
-// Build the legend from the distinct `kind` values actually present, in first-
-// seen order. A path with no `kind` falls back to its sentiment-bucket label so
-// the legend always reads in sport-specific terms when available and plain terms
-// otherwise. Each distinct label is coloured by the sentiment of the first path
-// that carries it, so colour ↔ sentiment never drifts.
-function buildLegend(paths: TrajectoryPath[]): LegendEntry[] {
-  const out: LegendEntry[] = [];
-  const seen = new Set<string>();
-  for (const p of paths) {
-    const sentiment = sentimentFor(p.outcome);
-    const label = p.kind?.trim() || FALLBACK_LABEL[sentiment];
-    if (seen.has(label)) continue;
-    seen.add(label);
-    out.push({
-      key: `${slug(label)}-${out.length}`,
-      label,
-      sentiment,
-      color: COLOR_BY_SENTIMENT[sentiment],
-    });
+// Plain-language fallback labels when a path has no `kind`, bucketed by outcome
+// so the legend still reads in words rather than blanks. Used only as a last
+// resort; real fixtures carry sport-specific `kind`s.
+function fallbackKind(outcome: Outcome | undefined): string {
+  switch (outcome) {
+    case 'winner':
+      return 'Scoring play';
+    case 'make':
+      return 'Completed';
+    case 'miss':
+      return 'Missed';
+    case 'error':
+      return 'Error';
+    default:
+      return 'Other';
   }
-  return out;
+}
+
+// A legend row: one distinct `kind` present in the data, with its assigned
+// categorical colour. `key` is stable per kind (slug + index) for React keys and
+// marker ids; `kind` is the toggle identity used by the selection set.
+interface LegendEntry {
+  key: string;
+  /** The exact kind string, used both as the displayed label and toggle id. */
+  kind: string;
+  color: string;
+  /** How many paths carry this kind (shown as a small count chip). */
+  count: number;
+}
+
+// Build the legend from the distinct `kind` values actually present, in first-
+// seen order, and assign each one the next palette colour. A path with no `kind`
+// falls back to an outcome-bucket word so it still groups + colours sensibly.
+// Colour is keyed off the kind's first-seen position, so it is deterministic and
+// stable for a given data set (re-render safe, SSR safe).
+function buildLegend(paths: TrajectoryPath[]): LegendEntry[] {
+  const order: string[] = [];
+  const counts = new Map<string, number>();
+  for (const p of paths) {
+    const kind = p.kind?.trim() || fallbackKind(p.outcome);
+    if (!counts.has(kind)) order.push(kind);
+    counts.set(kind, (counts.get(kind) ?? 0) + 1);
+  }
+  return order.map((kind, i) => ({
+    key: `${slug(kind)}-${i}`,
+    kind,
+    color: PALETTE[i % PALETTE.length],
+    count: counts.get(kind) ?? 0,
+  }));
 }
 
 export default function TrajectoryLines({
@@ -129,19 +148,72 @@ export default function TrajectoryLines({
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const glowId = `tl-glow-${uid}`;
 
-  // Legend derived from the distinct sport-specific `kind` values present
-  // (fallback to sentiment-bucket labels). Drawn in-SVG and used to key the
-  // per-label arrowhead markers, so colour ↔ label never drift.
+  // Legend derived from the distinct sport-specific `kind` values present, each
+  // mapped to one stable categorical colour. Drives the lines' colour, the
+  // arrowhead markers, and the interactive toggle UI.
   const legend = useMemo(() => buildLegend(paths), [paths]);
-  // label → legend entry, so each path can resolve its colour + arrowhead.
-  const legendByLabel = useMemo(() => {
+  // kind -> legend entry, so each path resolves its colour + arrowhead.
+  const legendByKind = useMemo(() => {
     const m = new Map<string, LegendEntry>();
-    for (const e of legend) m.set(e.label, e);
+    for (const e of legend) m.set(e.kind, e);
     return m;
   }, [legend]);
 
-  const { lines, keyLine } = useMemo(() => {
-    if (paths.length === 0) return { lines: [], keyLine: null };
+  // --- Interactive selection ---------------------------------------------------
+  // `selected` holds the kinds currently switched ON. `null` means "all on"
+  // (the default and reset state), so we never have to enumerate every kind up
+  // front and selection survives data changes gracefully. A kind is visible iff
+  // selection is null OR the set contains it.
+  const [selected, setSelected] = useState<Set<string> | null>(null);
+  // The kind currently hovered/focused (line or legend row), for the highlight
+  // state. null = nothing hovered.
+  const [hovered, setHovered] = useState<string | null>(null);
+
+  const isOn = useCallback(
+    (kind: string) => selected === null || selected.has(kind),
+    [selected],
+  );
+
+  // Toggle ONE kind on/off. Starting from "all on", the first click isolates the
+  // behaviour the user expects: clicking a kind turns just that one off (the rest
+  // stay on). Clicking it again turns it back on. We materialize the full set on
+  // first interaction so subsequent toggles are pure add/remove.
+  const toggle = useCallback(
+    (kind: string) => {
+      setSelected((prev) => {
+        const base = prev ?? new Set(legend.map((e) => e.kind));
+        const next = new Set(base);
+        if (next.has(kind)) next.delete(kind);
+        else next.add(kind);
+        // If everything ends up on again, collapse back to the "all" sentinel.
+        if (next.size === legend.length) return null;
+        // Never allow an empty selection (nothing visible is a dead end); a click
+        // that would clear the last kind instead isolates that kind.
+        if (next.size === 0) return new Set([kind]);
+        return next;
+      });
+    },
+    [legend],
+  );
+
+  // "Show only this kind" / "Show all" affordance per row: clicking the count
+  // chip isolates that kind; if it is already the sole active kind, it resets.
+  const isolate = useCallback(
+    (kind: string) => {
+      setSelected((prev) => {
+        if (prev && prev.size === 1 && prev.has(kind)) return null; // reset
+        return new Set([kind]);
+      });
+    },
+    [],
+  );
+
+  const resetAll = useCallback(() => setSelected(null), []);
+  const allOn = selected === null;
+
+  const { lines, view } = useMemo(() => {
+    const v = proj.view;
+    if (paths.length === 0) return { lines: [] as BuiltLine[], view: v };
     // Catmull-Rom passes through every point with gentle curvature → reads as a
     // natural flight/run path rather than straight segments.
     const gen = line<[number, number]>()
@@ -149,96 +221,69 @@ export default function TrajectoryLines({
       .y((d) => d[1])
       .curve(curveCatmullRom.alpha(0.6));
 
-    const built = paths.map((p, i) => {
+    const built: BuiltLine[] = paths.map((p, i) => {
       const pts = projectPoints(proj, p.points);
       const d = gen(pts) ?? '';
       const intensity = clampUnit(p.intensity ?? 0.6);
       const first = pts[0];
       const last = pts[pts.length - 1];
-      const sentiment = sentimentFor(p.outcome);
-      // Resolve this path to its legend row by its sport-specific label (fallback
-      // to the sentiment-bucket label), so colour + arrowhead match the legend.
-      const legendLabel = p.kind?.trim() || FALLBACK_LABEL[sentiment];
-      const entry = legendByLabel.get(legendLabel);
-      const markerKey = entry?.key ?? slug(legendLabel);
-      const color = entry?.color ?? COLOR_BY_SENTIMENT[sentiment];
-      // The tip of the final segment, used to orient/seat the arrowhead and to
-      // anchor the key-play label just past the destination.
+      const kind = p.kind?.trim() || fallbackKind(p.outcome);
+      const entry = legendByKind.get(kind);
+      const color = entry?.color ?? PALETTE[0];
+      const markerKey = entry?.key ?? slug(kind);
+      // Orientation of the final segment, to seat/orient nothing extra but keep
+      // the arrowhead direction implicit in the path (markerEnd uses auto).
       const prev = pts[pts.length - 2] ?? first;
       const angle = last && prev ? Math.atan2(last[1] - prev[1], last[0] - prev[0]) : 0;
       return {
         id: p.id ?? `traj-${i}`,
-        label: p.label,
+        label: p.label ?? kind,
+        kind,
         d,
-        sentiment,
         markerKey,
         color,
-        // Map intensity → stroke weight (1.4..4.6) and opacity (0.4..0.96).
+        // Map intensity → stroke weight (1.4..4.6) and opacity (0.45..0.96).
         width: 1.4 + intensity * 3.2,
-        opacity: 0.4 + intensity * 0.56,
+        baseOpacity: 0.45 + intensity * 0.51,
         intensity,
         start: first,
         end: last,
         angle,
       };
     });
-
-    // The single most important play (highest intensity) gets a label so the
-    // viewer's eye has an anchor. Ties resolve to the first path.
-    let keyIdx = 0;
-    for (let i = 1; i < built.length; i += 1) {
-      if (built[i].intensity > built[keyIdx].intensity) keyIdx = i;
-    }
-    const key = built[keyIdx]?.label ? built[keyIdx] : null;
-
-    return { lines: built, keyLine: key };
-  }, [paths, proj, legendByLabel]);
+    return { lines: built, view: v };
+  }, [paths, proj, legendByKind]);
 
   // Stagger animation start so paths trace in sequence, not all at once.
-  const stagger = 0.12;
-  const drawDur = 0.85;
+  const stagger = 0.1;
+  const drawDur = 0.8;
 
-  const { width: vw, height: vh } = proj.view;
+  const { width: vw, height: vh } = view;
   // Geometry scale: most viewBoxes are ~1000 wide; tennis is 540. Derive sizes
-  // from the smaller axis so dots/markers/legend stay proportional per pitch.
+  // from the smaller axis so dots/markers stay proportional per pitch.
   const unit = Math.min(vw, vh) / 1000;
   const originR = 7 * unit;
   const headR = 5.5 * unit;
 
-  // --- Legend box, laid out in viewBox units, pinned to the top-left -----------
-  const lgPad = 18 * unit;
-  const lgFont = 22 * unit;
-  const lgRow = 30 * unit;
-  const lgSwatch = 16 * unit;
-  const lgGap = 12 * unit;
-  // Width sized to the longest sport-specific label present so text never clips
-  // (monospace ≈ 0.6em per char), with a sensible minimum.
-  const longest = legend.reduce((m, e) => Math.max(m, e.label.length), 0);
-  const lgTextW = Math.max(110 * unit, longest * lgFont * 0.6);
-  const lgW = lgPad * 2 + lgSwatch + lgGap + lgTextW;
-  // Rows are spaced by lgRow but the last row needs only its swatch height, so
-  // height = top/bottom padding + (n-1) gaps + one swatch.
-  const lgH = lgPad * 2 + Math.max(0, legend.length - 1) * lgRow + lgSwatch;
-  const lgX = 14 * unit;
-  const lgY = 14 * unit;
+  // Accessible summary: which kinds are present and how many of each, plus the
+  // current selection, so screen readers get the gist + interactive state.
+  const ariaLabel = useMemo(() => {
+    const parts = legend.map((e) => `${e.count} ${e.kind}`);
+    const sel = allOn
+      ? 'all kinds shown'
+      : `showing ${legend.filter((e) => isOn(e.kind)).map((e) => e.kind).join(', ') || 'none'}`;
+    return `Trajectory lines: ${paths.length} plays across ${legend.length} kinds (${parts.join(
+      ', ',
+    )}). ${sel}. Use the legend to toggle kinds.`;
+  }, [legend, paths.length, allOn, isOn]);
 
-  // Accessible summary: counts per sentiment bucket so screen readers get the
-  // gist regardless of the sport-specific labels shown in the legend.
-  const counts = useMemo(() => {
-    const c = { positive: 0, shot: 0, muted: 0 } as Record<Sentiment, number>;
-    for (const l of lines) c[l.sentiment] += 1;
-    return c;
-  }, [lines]);
-
-  const ariaLabel =
-    `Trajectory lines: ${paths.length} plays, ` +
-    `${counts.positive} completed, ${counts.shot} shots or goals, ` +
-    `${counts.muted} incomplete.` +
-    (keyLine?.label ? ` Key play: ${keyLine.label}.` : '');
-
-  // The key-play label waits for its line (the most intense, drawn first) plus
-  // its draw duration, then fades in. Reduced/no-anim → shows immediately.
-  const keyLabelDelay = shouldAnimate ? drawDur + 0.15 : 0;
+  // --- Interactive legend geometry (HTML overlay via foreignObject) ------------
+  // Rendering the legend as real HTML <button>s inside a <foreignObject> keeps
+  // it locked to the field coordinate space (so it aligns across every consumer
+  // exactly like the old in-SVG legend) while giving native focus, keyboard and
+  // ARIA semantics that an <svg>-only control can't. The box auto-sizes to the
+  // content; we pin it top-left with a small inset.
+  const foPad = 14 * unit;
 
   return (
     <svg
@@ -260,10 +305,9 @@ export default function TrajectoryLines({
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
-        {/* One arrowhead marker per legend row (sport-specific label →
-            sentiment colour). `context-stroke` would be ideal but isn't
-            universal, so we bake the colour into each marker and reference the
-            matching one per path by its legend key. */}
+        {/* One arrowhead marker per legend kind, baked in that kind's colour.
+            `context-stroke` would be ideal but isn't universal, so we reference
+            the matching marker per path by its legend key. */}
         {legend.map((e) => (
           <marker
             key={e.key}
@@ -281,100 +325,135 @@ export default function TrajectoryLines({
         ))}
       </defs>
 
-      <g aria-hidden="true" fill="none" strokeLinecap="round" strokeLinejoin="round">
-        {/* Dark casing under each stroke: a slightly wider bg-coloured line so a
-            lime/orange path stays crisp and separated where paths cross. */}
-        {lines.map((l, i) =>
-          shouldAnimate ? (
+      <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+        {/* Dark casing under each stroke: a slightly wider bg-coloured line so
+            distinct-colour paths stay crisp and separated where they cross.
+            Casing tracks the same visibility/dim state as its line. */}
+        {lines.map((l, i) => {
+          const on = isOn(l.kind);
+          const casingOpacity = on ? 0.55 : 0.05;
+          return shouldAnimate ? (
             <motion.path
               key={`${l.id}-casing`}
               d={l.d}
               stroke="var(--color-bg)"
-              strokeOpacity={0.55}
               strokeWidth={l.width + 2.4 * unit}
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: drawDur, ease: 'easeInOut', delay: i * stagger }}
-            />
-          ) : (
-            <path
-              key={`${l.id}-casing`}
-              d={l.d}
-              stroke="var(--color-bg)"
-              strokeOpacity={0.55}
-              strokeWidth={l.width + 2.4 * unit}
-            />
-          ),
-        )}
-
-        {/* Paths, each with a directional arrowhead matching its colour. The
-            arrowhead fades in only once the stroke is essentially drawn, so it
-            doesn't sit detached at the destination while the line is still tracing. */}
-        {lines.map((l, i) =>
-          shouldAnimate ? (
-            <motion.path
-              key={l.id}
-              d={l.d}
-              stroke={l.color}
-              strokeWidth={l.width}
-              filter={`url(#${glowId})`}
-              markerEnd={`url(#${uid}-arrow-${l.markerKey})`}
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={{ pathLength: 1, opacity: l.opacity }}
+              initial={{ pathLength: 0, strokeOpacity: 0 }}
+              animate={{ pathLength: 1, strokeOpacity: casingOpacity }}
               transition={{
                 pathLength: { duration: drawDur, ease: 'easeInOut', delay: i * stagger },
-                opacity: { duration: 0.25, delay: i * stagger },
+                strokeOpacity: { duration: 0.3, delay: i * stagger },
               }}
+            />
+          ) : (
+            <path
+              key={`${l.id}-casing`}
+              d={l.d}
+              stroke="var(--color-bg)"
+              strokeWidth={l.width + 2.4 * unit}
+              style={{ strokeOpacity: casingOpacity, transition: 'stroke-opacity 0.25s ease' }}
+            />
+          );
+        })}
+
+        {/* Paths, each in its kind colour with a matching directional arrowhead.
+            Visibility/dim + hover-emphasis are driven by the selection + hover
+            state. The draw-on animates pathLength/opacity IN once; the resting
+            opacity afterwards is controlled via the `animate` target so a line
+            NEVER ends hidden. */}
+        {lines.map((l, i) => {
+          const on = isOn(l.kind);
+          const isHot = hovered === l.kind;
+          const anyHover = hovered !== null;
+          // Resting opacity: dim hard when toggled off; when something is hovered,
+          // lift the hovered kind and softly mute the rest; otherwise base.
+          const restOpacity = !on
+            ? 0.08
+            : anyHover
+              ? isHot
+                ? Math.min(1, l.baseOpacity + 0.25)
+                : l.baseOpacity * 0.4
+              : l.baseOpacity;
+          const restWidth = isHot && on ? l.width + 1.4 * unit : l.width;
+          const common = {
+            stroke: l.color,
+            filter: `url(#${glowId})`,
+            markerEnd: `url(#${uid}-arrow-${l.markerKey})`,
+            onMouseEnter: () => setHovered(l.kind),
+            onMouseLeave: () => setHovered((h) => (h === l.kind ? null : h)),
+            style: { cursor: 'pointer' as const },
+          };
+          return shouldAnimate ? (
+            <motion.path
+              key={l.id}
+              d={l.d}
+              strokeWidth={restWidth}
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: restOpacity }}
+              transition={{
+                pathLength: { duration: drawDur, ease: 'easeInOut', delay: i * stagger },
+                opacity: { duration: 0.3, delay: anyHover || !on ? 0 : i * stagger },
+                strokeWidth: { duration: 0.18 },
+              }}
+              {...common}
             />
           ) : (
             <path
               key={l.id}
               d={l.d}
-              stroke={l.color}
-              strokeWidth={l.width}
-              strokeOpacity={l.opacity}
-              filter={`url(#${glowId})`}
-              markerEnd={`url(#${uid}-arrow-${l.markerKey})`}
+              strokeWidth={restWidth}
+              style={{
+                ...common.style,
+                opacity: restOpacity,
+                transition: 'opacity 0.25s ease, stroke-width 0.18s ease',
+              }}
+              stroke={common.stroke}
+              filter={common.filter}
+              markerEnd={common.markerEnd}
+              onMouseEnter={common.onMouseEnter}
+              onMouseLeave={common.onMouseLeave}
             />
-          ),
-        )}
+          );
+        })}
 
-        {/* Travelling head: a bright dot rides the leading edge of each stroke
-            as it draws on, then fades, so the eye follows the play's direction.
-            Only rendered while animating (reduced motion / static = no head). */}
+        {/* Travelling head: a bright dot rides the leading edge of each visible
+            stroke as it draws on, then fades, so the eye follows the play's
+            direction. Only while animating, only for on + real paths. */}
         {shouldAnimate &&
           lines.map((l, i) =>
-            // Skip degenerate paths (<2 points → empty d): `offsetPath: path('')`
-            // is invalid CSS, so only ride a head on a real path.
-            l.d ? (
-            <motion.circle
-              key={`${l.id}-head`}
-              r={headR}
-              cx={0}
-              cy={0}
-              fill={l.color}
-              filter={`url(#${glowId})`}
-              initial={{ opacity: 0, offsetDistance: '0%' }}
-              animate={{ opacity: [0, 1, 1, 0], offsetDistance: '100%' }}
-              transition={{
-                offsetDistance: { duration: drawDur, ease: 'easeInOut', delay: i * stagger },
-                opacity: {
-                  duration: drawDur,
-                  delay: i * stagger,
-                  times: [0, 0.12, 0.86, 1],
-                  ease: 'linear',
-                },
-              }}
-              style={{ offsetPath: `path('${l.d}')`, offsetRotate: '0deg' }}
-            />
+            l.d && isOn(l.kind) ? (
+              <motion.circle
+                key={`${l.id}-head`}
+                r={headR}
+                cx={0}
+                cy={0}
+                fill={l.color}
+                filter={`url(#${glowId})`}
+                initial={{ opacity: 0, offsetDistance: '0%' }}
+                animate={{ opacity: [0, 1, 1, 0], offsetDistance: '100%' }}
+                transition={{
+                  offsetDistance: { duration: drawDur, ease: 'easeInOut', delay: i * stagger },
+                  opacity: {
+                    duration: drawDur,
+                    delay: i * stagger,
+                    times: [0, 0.12, 0.86, 1],
+                    ease: 'linear',
+                  },
+                }}
+                style={{ offsetPath: `path('${l.d}')`, offsetRotate: '0deg' }}
+              />
             ) : null,
           )}
 
         {/* Origin dots, a hollow node where each play begins so the start of
-            every arrow is unambiguous even when paths overlap. Fades in with
-            its line when animating. */}
-        {lines.map((l, i) =>
-          l.start ? (
+            every arrow is unambiguous even when paths overlap. Shares the line's
+            colour + visibility. */}
+        {lines.map((l, i) => {
+          if (!l.start) return null;
+          const on = isOn(l.kind);
+          const isHot = hovered === l.kind;
+          const dotOpacity = !on ? 0.1 : isHot ? 1 : Math.max(l.baseOpacity, 0.7);
+          return (
             <motion.circle
               key={`${l.id}-origin`}
               cx={l.start[0]}
@@ -383,96 +462,304 @@ export default function TrajectoryLines({
               fill="var(--color-bg)"
               stroke={l.color}
               strokeWidth={2 * unit}
-              strokeOpacity={Math.max(l.opacity, 0.7)}
               initial={shouldAnimate ? { opacity: 0, scale: 0.4 } : false}
-              animate={shouldAnimate ? { opacity: 1, scale: 1 } : undefined}
-              style={{ transformOrigin: `${l.start[0]}px ${l.start[1]}px` }}
+              animate={
+                shouldAnimate
+                  ? { opacity: dotOpacity, scale: 1 }
+                  : { opacity: dotOpacity }
+              }
+              style={{
+                transformOrigin: `${l.start[0]}px ${l.start[1]}px`,
+                transition: shouldAnimate ? undefined : 'opacity 0.25s ease',
+              }}
               transition={
                 shouldAnimate
-                  ? { duration: 0.3, delay: i * stagger, ease: [0.16, 1, 0.3, 1] }
+                  ? { duration: 0.3, delay: on ? i * stagger : 0, ease: [0.16, 1, 0.3, 1] }
                   : undefined
               }
             />
-          ) : null,
-        )}
+          );
+        })}
 
-        {/* Key-play label, placed just past the destination of the most
-            intense play, with a readable backing chip. Fades in after its line
-            has finished tracing. */}
-        {keyLine && keyLine.end && (
-          <KeyPlayLabel
-            x={keyLine.end[0]}
-            y={keyLine.end[1]}
-            angle={keyLine.angle}
-            text={keyLine.label as string}
-            color={keyLine.color}
-            unit={unit}
-            view={proj.view}
-            animateOn={shouldAnimate}
-            delay={keyLabelDelay}
-          />
-        )}
+        {/* Hover label: when a kind is hovered/focused, surface the play label of
+            the (first) hovered line just past its destination, in that kind's
+            colour, so the highlight is also legible. */}
+        {(() => {
+          if (!hovered) return null;
+          const hot = lines.find((l) => l.kind === hovered && l.end && isOn(l.kind));
+          if (!hot || !hot.end) return null;
+          return (
+            <HoverLabel
+              x={hot.end[0]}
+              y={hot.end[1]}
+              angle={hot.angle}
+              text={hot.label}
+              color={hot.color}
+              unit={unit}
+              view={view}
+            />
+          );
+        })()}
       </g>
 
-      {/* In-SVG legend, sport-specific play name ↔ sentiment colour.
-          aria-hidden because the <svg> label already conveys per-bucket counts
-          to assistive tech. */}
+      {/* Interactive legend: real HTML toggle buttons inside a foreignObject so
+          they stay locked to the field coordinate space (aligned across all
+          consumers) yet keyboard + screen-reader accessible. */}
       {legend.length > 0 && (
-        <g aria-hidden="true" transform={`translate(${lgX} ${lgY})`}>
-          <rect
-            x={0}
-            y={0}
-            width={lgW}
-            height={lgH}
-            rx={10 * unit}
-            fill="var(--color-surface)"
-            fillOpacity={0.82}
-            stroke="var(--color-border)"
-            strokeWidth={1.5 * unit}
+        <foreignObject
+          x={foPad}
+          y={foPad}
+          width={vw - foPad * 2}
+          height={vh - foPad * 2}
+          // The box only needs to host the top-left panel; we let pointer events
+          // pass through the empty area so lines underneath stay hoverable.
+          style={{ pointerEvents: 'none', overflow: 'visible' }}
+        >
+          <LegendPanel
+            legend={legend}
+            isOn={isOn}
+            allOn={allOn}
+            hovered={hovered}
+            onToggle={toggle}
+            onIsolate={isolate}
+            onReset={resetAll}
+            onHover={setHovered}
+            unit={unit}
           />
-          {legend.map((e, i) => {
-            const cy = lgPad + i * lgRow + lgSwatch / 2;
-            return (
-              <g key={e.key}>
-                <line
-                  x1={lgPad}
-                  y1={cy}
-                  x2={lgPad + lgSwatch}
-                  y2={cy}
-                  stroke={e.color}
-                  strokeWidth={4 * unit}
-                  strokeLinecap="round"
-                />
-                <circle
-                  cx={lgPad + lgSwatch / 2}
-                  cy={cy}
-                  r={2.6 * unit}
-                  fill="var(--color-bg)"
-                  stroke={e.color}
-                  strokeWidth={1.5 * unit}
-                />
-                <text
-                  x={lgPad + lgSwatch + lgGap}
-                  y={cy}
-                  fontSize={lgFont}
-                  fontFamily="var(--font-mono, ui-monospace, monospace)"
-                  fill="var(--color-text)"
-                  dominantBaseline="central"
-                >
-                  {e.label}
-                </text>
-              </g>
-            );
-          })}
-        </g>
+        </foreignObject>
       )}
     </svg>
   );
 }
 
-// Renders the key-play callout: a small connector + a rounded chip with the
-// play name, nudged to stay inside the viewBox.
-function KeyPlayLabel({
+// Shape of a fully resolved, render-ready line.
+interface BuiltLine {
+  id: string;
+  label: string;
+  kind: string;
+  d: string;
+  markerKey: string;
+  color: string;
+  width: number;
+  baseOpacity: number;
+  intensity: number;
+  start: [number, number] | undefined;
+  end: [number, number] | undefined;
+  angle: number;
+}
+
+// --- Interactive legend panel (HTML) ----------------------------------------
+//
+// Each row is a role="checkbox" button: click or Space/Enter toggles its kind.
+// The whole panel scales with `unit` so it matches the SVG's pitch sizing. We
+// re-enable pointer events here (the parent foreignObject lets them pass).
+function LegendPanel({
+  legend,
+  isOn,
+  allOn,
+  hovered,
+  onToggle,
+  onIsolate,
+  onReset,
+  onHover,
+  unit,
+}: {
+  legend: LegendEntry[];
+  isOn: (kind: string) => boolean;
+  allOn: boolean;
+  hovered: string | null;
+  onToggle: (kind: string) => void;
+  onIsolate: (kind: string) => void;
+  onReset: () => void;
+  onHover: (kind: string | null) => void;
+  unit: number;
+}) {
+  // Scale typography/spacing off `unit` so the panel reads the same physical
+  // size on every pitch (tennis viewBox is smaller, so unit is smaller there).
+  const fontPx = Math.max(11, 22 * unit);
+  const onCount = legend.filter((e) => isOn(e.kind)).length;
+
+  return (
+    <div
+      // foreignObject children need the XHTML namespace; React adds it for known
+      // HTML tags automatically. pointerEvents re-enabled just on the panel.
+      style={{
+        display: 'inline-flex',
+        flexDirection: 'column',
+        gap: `${0.35 * fontPx}px`,
+        padding: `${0.6 * fontPx}px`,
+        borderRadius: `${0.55 * fontPx}px`,
+        background: 'color-mix(in srgb, var(--color-surface) 86%, transparent)',
+        border: '1px solid var(--color-border)',
+        backdropFilter: 'blur(4px)',
+        fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+        fontSize: `${fontPx}px`,
+        lineHeight: 1.2,
+        color: 'var(--color-text)',
+        pointerEvents: 'auto',
+        boxShadow: '0 4px 18px color-mix(in srgb, var(--color-bg) 60%, transparent)',
+        maxWidth: `${22 * fontPx}px`,
+      }}
+      role="group"
+      aria-label="Toggle play kinds"
+    >
+      {/* Header row: title + reset-all control. */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: `${0.6 * fontPx}px`,
+          paddingBottom: `${0.25 * fontPx}px`,
+          borderBottom: '1px solid var(--color-border)',
+          marginBottom: `${0.15 * fontPx}px`,
+        }}
+      >
+        <span
+          style={{
+            fontSize: `${0.7 * fontPx}px`,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'var(--color-muted)',
+          }}
+        >
+          Plays
+        </span>
+        <button
+          type="button"
+          onClick={onReset}
+          disabled={allOn}
+          aria-label="Show all kinds"
+          style={{
+            font: 'inherit',
+            fontSize: `${0.66 * fontPx}px`,
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+            cursor: allOn ? 'default' : 'pointer',
+            color: allOn ? 'var(--color-muted)' : 'var(--color-accent1)',
+            background: 'transparent',
+            border: `1px solid ${allOn ? 'var(--color-border)' : 'var(--color-accent1)'}`,
+            borderRadius: `${0.4 * fontPx}px`,
+            padding: `${0.12 * fontPx}px ${0.45 * fontPx}px`,
+            opacity: allOn ? 0.5 : 1,
+            transition: 'opacity 0.2s ease, color 0.2s ease, border-color 0.2s ease',
+          }}
+        >
+          All
+        </button>
+      </div>
+
+      {legend.map((e) => {
+        const on = isOn(e.kind);
+        const isHot = hovered === e.kind;
+        const soleActive = on && onCount === 1;
+        return (
+          <div
+            key={e.key}
+            style={{ display: 'flex', alignItems: 'center', gap: `${0.35 * fontPx}px` }}
+          >
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={on}
+              aria-label={`${e.kind}, ${e.count} ${e.count === 1 ? 'play' : 'plays'}${
+                on ? ', shown' : ', hidden'
+              }`}
+              onClick={() => onToggle(e.kind)}
+              onMouseEnter={() => onHover(e.kind)}
+              onMouseLeave={() => onHover(null)}
+              onFocus={() => onHover(e.kind)}
+              onBlur={() => onHover(null)}
+              style={{
+                flex: '1 1 auto',
+                display: 'flex',
+                alignItems: 'center',
+                gap: `${0.5 * fontPx}px`,
+                font: 'inherit',
+                textAlign: 'left',
+                cursor: 'pointer',
+                background: isHot
+                  ? 'color-mix(in srgb, var(--color-surface-alt) 90%, transparent)'
+                  : 'transparent',
+                border: `1px solid ${
+                  isHot ? 'var(--color-border)' : 'transparent'
+                }`,
+                borderRadius: `${0.4 * fontPx}px`,
+                padding: `${0.2 * fontPx}px ${0.4 * fontPx}px`,
+                opacity: on ? 1 : 0.42,
+                transition: 'opacity 0.2s ease, background 0.15s ease, border-color 0.15s ease',
+              }}
+            >
+              {/* Swatch: solid in the kind colour when on, hollow when off, so the
+                  on/off state is obvious at a glance. */}
+              <span
+                aria-hidden="true"
+                style={{
+                  flex: '0 0 auto',
+                  width: `${0.9 * fontPx}px`,
+                  height: `${0.9 * fontPx}px`,
+                  borderRadius: '3px',
+                  background: on ? e.color : 'transparent',
+                  border: `2px solid ${e.color}`,
+                  boxShadow: on
+                    ? `0 0 ${0.5 * fontPx}px color-mix(in srgb, ${e.color} 70%, transparent)`
+                    : 'none',
+                  transition: 'background 0.2s ease, box-shadow 0.2s ease',
+                }}
+              />
+              <span
+                style={{
+                  flex: '1 1 auto',
+                  whiteSpace: 'nowrap',
+                  textDecoration: on ? 'none' : 'line-through',
+                  textDecorationColor: 'var(--color-muted)',
+                }}
+              >
+                {e.kind}
+              </span>
+            </button>
+
+            {/* Count chip doubles as an "isolate / reset" control: click to show
+                only this kind; click again (when it is the sole active kind) to
+                show all. */}
+            <button
+              type="button"
+              onClick={() => onIsolate(e.kind)}
+              onMouseEnter={() => onHover(e.kind)}
+              onMouseLeave={() => onHover(null)}
+              onFocus={() => onHover(e.kind)}
+              onBlur={() => onHover(null)}
+              aria-label={
+                soleActive ? `Showing only ${e.kind}. Show all kinds` : `Show only ${e.kind}`
+              }
+              title={soleActive ? 'Show all' : `Show only ${e.kind}`}
+              style={{
+                flex: '0 0 auto',
+                font: 'inherit',
+                fontSize: `${0.68 * fontPx}px`,
+                cursor: 'pointer',
+                minWidth: `${1.4 * fontPx}px`,
+                textAlign: 'center',
+                color: soleActive ? 'var(--color-bg)' : 'var(--color-muted)',
+                background: soleActive ? e.color : 'color-mix(in srgb, var(--color-surface-alt) 80%, transparent)',
+                border: `1px solid ${soleActive ? e.color : 'var(--color-border)'}`,
+                borderRadius: `${0.35 * fontPx}px`,
+                padding: `${0.08 * fontPx}px ${0.3 * fontPx}px`,
+                transition: 'background 0.2s ease, color 0.2s ease',
+              }}
+            >
+              {e.count}
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Renders the hover callout: a small dashed connector + a rounded chip with the
+// play label, nudged to stay inside the viewBox, in the kind colour.
+function HoverLabel({
   x,
   y,
   angle,
@@ -480,8 +767,6 @@ function KeyPlayLabel({
   color,
   unit,
   view,
-  animateOn,
-  delay,
 }: {
   x: number;
   y: number;
@@ -490,8 +775,6 @@ function KeyPlayLabel({
   color: string;
   unit: number;
   view: { width: number; height: number };
-  animateOn: boolean;
-  delay: number;
 }) {
   const fontSize = 22 * unit;
   const padX = 12 * unit;
@@ -513,13 +796,7 @@ function KeyPlayLabel({
   cy = chipY + chipH / 2;
 
   return (
-    <motion.g
-      initial={animateOn ? { opacity: 0, scale: 0.9 } : false}
-      animate={animateOn ? { opacity: 1, scale: 1 } : undefined}
-      style={{ transformOrigin: `${cx}px ${cy}px` }}
-      transition={animateOn ? { duration: 0.35, delay, ease: [0.16, 1, 0.3, 1] } : undefined}
-    >
-      {/* Connector from the arrow tip to the chip. */}
+    <g aria-hidden="true" style={{ pointerEvents: 'none' }}>
       <line
         x1={x}
         y1={y}
@@ -537,7 +814,7 @@ function KeyPlayLabel({
         height={chipH}
         rx={chipH / 2}
         fill="var(--color-surface)"
-        fillOpacity={0.92}
+        fillOpacity={0.95}
         stroke={color}
         strokeWidth={1.5 * unit}
       />
@@ -552,7 +829,7 @@ function KeyPlayLabel({
       >
         {text}
       </text>
-    </motion.g>
+    </g>
   );
 }
 
