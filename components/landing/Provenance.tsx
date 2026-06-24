@@ -26,8 +26,17 @@
 // here. Stages enter with the shared <Reveal> primitive.
 
 import Reveal from '@/components/Reveal';
-import { Upload, Cpu, UserCheck, ShieldCheck, BadgeCheck } from 'lucide-react';
+import {
+  Upload,
+  Cpu,
+  UserCheck,
+  ShieldCheck,
+  BadgeCheck,
+  PackageCheck,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { motion, useInView, useReducedMotion } from 'framer-motion';
+import { useRef } from 'react';
 import clsx from 'clsx';
 import { PROVENANCE } from '@/lib/content';
 import type {
@@ -52,6 +61,19 @@ const OWNER_META: Record<
   AI: { icon: Cpu, tone: 'cool' },
   Analyst: { icon: UserCheck, tone: 'warm' },
   Senior: { icon: ShieldCheck, tone: 'warm' },
+  // Delivery is the confident endpoint, the finished product landing in the
+  // client's hands, so it carries the same warm lime highlight as the human
+  // stages rather than reading as a neutral input.
+  Delivery: { icon: PackageCheck, tone: 'warm' },
+};
+
+// Short owner label shown in the pill above each stage.
+const OWNER_LABEL: Record<ProvenanceStep['owner'], string> = {
+  Client: 'You',
+  AI: 'AI assist',
+  Analyst: 'Human analyst',
+  Senior: 'Senior analyst',
+  Delivery: 'Delivered to you',
 };
 
 // ---------------------------------------------------------------------------
@@ -82,6 +104,111 @@ export function ProvenanceBadge({
       </span>
       <span className="text-text">{badge.secondary}</span>
     </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Chain-of-custody connector.
+//
+// A single self-drawing line that threads the numbered nodes in order
+// (1 -> 2 -> 3 -> 4 -> 5), making the pipeline read as one continuous flow
+// rather than five disconnected cards. It draws on (pathLength) the first time
+// the section scrolls into view, the same calm "settle into place" motion the
+// rest of the suite uses.
+//
+// Two orientations share one component:
+//   - desktop (lg+): a horizontal connector threading the icon centers
+//   - mobile / tablet: a vertical rail down the left edge of the node column
+//
+// Purely decorative, so it is aria-hidden and sits behind the nodes (z-0).
+// Reduced-motion safe: it renders fully drawn with no animation.
+// ---------------------------------------------------------------------------
+
+const CONNECTOR_DRAW = { duration: 1.1, ease: [0.16, 1, 0.3, 1] } as const;
+
+function ProvenanceConnector() {
+  const reduce = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: '0px 0px -15% 0px' });
+
+  // Reduced motion (and pre-hydration): render the line fully drawn, no ramp.
+  const drawn = reduce || inView;
+
+  return (
+    <div ref={ref} aria-hidden="true">
+      {/*
+        Desktop horizontal connector. On the lg row the node icon box (h-14,
+        56px) centers ~40px down from the top of each grid cell, so the line is
+        pinned there (top-10) and runs the full width behind the row. The first
+        and last segments are trimmed (x 10..90) so it starts and ends inside
+        the outer icons rather than overshooting them.
+      */}
+      <svg
+        className="pointer-events-none absolute left-0 right-0 top-10 z-0 hidden h-px w-full overflow-visible lg:block"
+        viewBox="0 0 100 1"
+        preserveAspectRatio="none"
+        fill="none"
+      >
+        <line
+          x1="10"
+          y1="0.5"
+          x2="90"
+          y2="0.5"
+          stroke="var(--color-border)"
+          strokeWidth={1}
+          strokeDasharray="0.6 1.6"
+          vectorEffect="non-scaling-stroke"
+        />
+        <motion.line
+          x1="10"
+          y1="0.5"
+          x2="90"
+          y2="0.5"
+          stroke="var(--color-accent1)"
+          strokeWidth={1.5}
+          vectorEffect="non-scaling-stroke"
+          initial={reduce ? false : { pathLength: 0 }}
+          animate={{ pathLength: drawn ? 1 : 0 }}
+          transition={CONNECTOR_DRAW}
+        />
+      </svg>
+
+      {/*
+        Mobile / tablet vertical rail. The node column is 56px wide (h-14), so
+        the rail is pinned to its horizontal center (28px). It runs from just
+        below the first node to just above the last, trimmed via top/bottom
+        insets so it threads the nodes instead of overshooting them.
+      */}
+      <svg
+        className="pointer-events-none absolute bottom-12 left-7 top-12 z-0 block w-px overflow-visible md:hidden"
+        viewBox="0 0 1 100"
+        preserveAspectRatio="none"
+        fill="none"
+      >
+        <line
+          x1="0.5"
+          y1="0"
+          x2="0.5"
+          y2="100"
+          stroke="var(--color-border)"
+          strokeWidth={1}
+          strokeDasharray="0.6 1.6"
+          vectorEffect="non-scaling-stroke"
+        />
+        <motion.line
+          x1="0.5"
+          y1="0"
+          x2="0.5"
+          y2="100"
+          stroke="var(--color-accent1)"
+          strokeWidth={1.5}
+          vectorEffect="non-scaling-stroke"
+          initial={reduce ? false : { pathLength: 0 }}
+          animate={{ pathLength: drawn ? 1 : 0 }}
+          transition={CONNECTOR_DRAW}
+        />
+      </svg>
+    </div>
   );
 }
 
@@ -116,8 +243,16 @@ export default function Provenance({
           </div>
         </Reveal>
 
-        <ol className="grid grid-cols-1 gap-x-8 gap-y-10 sm:gap-x-8 md:grid-cols-2 lg:grid-cols-4">
-          {content.steps.map((step, idx) => {
+        {/*
+          The connector sits in the same relative box as the steps so its
+          horizontal line (desktop) and vertical rail (mobile) thread the
+          numbered nodes. On tablet (md, two-up grid) neither orientation
+          applies, so the connector renders nothing and the cards stand alone.
+        */}
+        <div className="relative">
+          <ProvenanceConnector />
+          <ol className="relative grid grid-cols-1 gap-x-6 gap-y-10 sm:gap-x-8 md:grid-cols-2 lg:grid-cols-5 lg:gap-x-5">
+            {content.steps.map((step, idx) => {
             const meta = OWNER_META[step.owner];
             const Icon = meta.icon;
             // Human stages carry the single lime highlight; input stages
@@ -162,13 +297,7 @@ export default function Provenance({
                         : 'bg-surfaceAlt text-muted',
                     )}
                   >
-                    {step.owner === 'Client'
-                      ? 'You'
-                      : step.owner === 'AI'
-                      ? 'AI assist'
-                      : step.owner === 'Senior'
-                      ? 'Senior analyst'
-                      : 'Human analyst'}
+                    {OWNER_LABEL[step.owner]}
                   </span>
                   <h3 className="mt-3 font-display text-lg font-bold leading-snug text-text">
                     {step.stage}
@@ -178,9 +307,10 @@ export default function Provenance({
                   </p>
                 </div>
               </Reveal>
-            );
-          })}
-        </ol>
+              );
+            })}
+          </ol>
+        </div>
       </div>
     </section>
   );

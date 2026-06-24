@@ -38,6 +38,9 @@ import { motion, useInView, useReducedMotion } from 'framer-motion';
 import type { Outcome, PitchType, TrajectoryPath } from '@/lib/types';
 import { makeProjector, projectPoints, viewBoxAttr } from './geometry';
 
+/** Which corner the interactive legend docks to, so it never covers the plays. */
+export type LegendPlacement = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+
 export interface TrajectoryLinesProps {
   /** Paths as ordered point lists in normalized 0..1 space. */
   paths: TrajectoryPath[];
@@ -45,6 +48,17 @@ export interface TrajectoryLinesProps {
   pitch: PitchType;
   /** Run a draw-on stroke animation (reduced-motion safe). Default false. */
   animate?: boolean;
+  /**
+   * Corner the legend docks to. A translucent panel in the chosen corner keeps
+   * the legend out of the way of the drawn paths. Default 'top-left' (back-
+   * compat with existing consumers).
+   */
+  legendPlacement?: LegendPlacement;
+  /**
+   * When true the legend can be collapsed to a single compact chip (so it never
+   * obscures the field) and expanded on demand. Default false (always expanded).
+   */
+  legendCollapsible?: boolean;
   /** Optional extra classes for the <svg>. */
   className?: string;
 }
@@ -134,6 +148,8 @@ export default function TrajectoryLines({
   paths,
   pitch,
   animate = false,
+  legendPlacement = 'top-left',
+  legendCollapsible = false,
   className,
 }: TrajectoryLinesProps) {
   const proj = useMemo(() => makeProjector(pitch), [pitch]);
@@ -168,6 +184,9 @@ export default function TrajectoryLines({
   // The kind currently hovered/focused (line or legend row), for the highlight
   // state. null = nothing hovered.
   const [hovered, setHovered] = useState<string | null>(null);
+  // Collapsed legend state (only meaningful when `legendCollapsible`). Collapsed
+  // shrinks the panel to a single compact chip so the field is fully clear.
+  const [legendCollapsed, setLegendCollapsed] = useState(false);
 
   const isOn = useCallback(
     (kind: string) => selected === null || selected.has(kind),
@@ -511,28 +530,45 @@ export default function TrajectoryLines({
 
       {/* Interactive legend: real HTML toggle buttons inside a foreignObject so
           they stay locked to the field coordinate space (aligned across all
-          consumers) yet keyboard + screen-reader accessible. */}
+          consumers) yet keyboard + screen-reader accessible. The foreignObject
+          spans the full field; an inner flex wrapper docks the compact panel
+          into the chosen CORNER so it never covers the drawn plays. The wrapper
+          itself ignores pointer events (only the panel re-enables them), so the
+          empty field area stays fully hoverable. */}
       {legend.length > 0 && (
         <foreignObject
           x={foPad}
           y={foPad}
           width={vw - foPad * 2}
           height={vh - foPad * 2}
-          // The box only needs to host the top-left panel; we let pointer events
-          // pass through the empty area so lines underneath stay hoverable.
           style={{ pointerEvents: 'none', overflow: 'visible' }}
         >
-          <LegendPanel
-            legend={legend}
-            isOn={isOn}
-            allOn={allOn}
-            hovered={hovered}
-            onToggle={toggle}
-            onIsolate={isolate}
-            onReset={resetAll}
-            onHover={setHovered}
-            unit={unit}
-          />
+          <div
+            style={{
+              display: 'flex',
+              width: '100%',
+              height: '100%',
+              // Dock the panel into the requested corner.
+              justifyContent: legendPlacement.endsWith('right') ? 'flex-end' : 'flex-start',
+              alignItems: legendPlacement.startsWith('bottom') ? 'flex-end' : 'flex-start',
+              pointerEvents: 'none',
+            }}
+          >
+            <LegendPanel
+              legend={legend}
+              isOn={isOn}
+              allOn={allOn}
+              hovered={hovered}
+              onToggle={toggle}
+              onIsolate={isolate}
+              onReset={resetAll}
+              onHover={setHovered}
+              unit={unit}
+              collapsible={legendCollapsible}
+              collapsed={legendCollapsible && legendCollapsed}
+              onToggleCollapsed={() => setLegendCollapsed((c) => !c)}
+            />
+          </div>
         </foreignObject>
       )}
     </svg>
@@ -570,6 +606,9 @@ function LegendPanel({
   onReset,
   onHover,
   unit,
+  collapsible = false,
+  collapsed = false,
+  onToggleCollapsed,
 }: {
   legend: LegendEntry[];
   isOn: (kind: string) => boolean;
@@ -580,11 +619,68 @@ function LegendPanel({
   onReset: () => void;
   onHover: (kind: string | null) => void;
   unit: number;
+  /** Allow collapsing the panel down to a single compact chip. */
+  collapsible?: boolean;
+  /** Whether the panel is currently collapsed (only when `collapsible`). */
+  collapsed?: boolean;
+  /** Toggle collapsed state. */
+  onToggleCollapsed?: () => void;
 }) {
   // Scale typography/spacing off `unit` so the panel reads the same physical
   // size on every pitch (tennis viewBox is smaller, so unit is smaller there).
-  const fontPx = Math.max(11, 22 * unit);
+  // Bumped a clear step (floor 11→13, 22→26) so the in-SVG legend reads
+  // comfortably on desktop, where the capped pitch box left it undersized.
+  const fontPx = Math.max(13, 26 * unit);
   const onCount = legend.filter((e) => isOn(e.kind)).length;
+
+  // Collapsed: render only a compact pill that expands the legend on click, so
+  // the field is fully clear. The pill shows the kind colours as a swatch strip
+  // so the legend identity is still hinted while collapsed.
+  if (collapsible && collapsed) {
+    return (
+      <button
+        type="button"
+        onClick={onToggleCollapsed}
+        aria-expanded={false}
+        aria-label={`Show plays legend (${legend.length} kinds)`}
+        title="Show legend"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: `${0.4 * fontPx}px`,
+          padding: `${0.35 * fontPx}px ${0.55 * fontPx}px`,
+          borderRadius: `${0.5 * fontPx}px`,
+          background: 'color-mix(in srgb, var(--color-surface) 80%, transparent)',
+          border: '1px solid var(--color-border)',
+          backdropFilter: 'blur(4px)',
+          fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+          fontSize: `${0.7 * fontPx}px`,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          color: 'var(--color-muted)',
+          cursor: 'pointer',
+          pointerEvents: 'auto',
+          boxShadow: '0 4px 18px color-mix(in srgb, var(--color-bg) 60%, transparent)',
+        }}
+      >
+        <span style={{ display: 'inline-flex', gap: `${0.18 * fontPx}px` }} aria-hidden="true">
+          {legend.slice(0, 6).map((e) => (
+            <span
+              key={e.key}
+              style={{
+                width: `${0.55 * fontPx}px`,
+                height: `${0.55 * fontPx}px`,
+                borderRadius: '2px',
+                background: isOn(e.kind) ? e.color : 'transparent',
+                border: `1.5px solid ${e.color}`,
+              }}
+            />
+          ))}
+        </span>
+        Plays
+      </button>
+    );
+  }
 
   return (
     <div
@@ -632,28 +728,68 @@ function LegendPanel({
         >
           Plays
         </span>
-        <button
-          type="button"
-          onClick={onReset}
-          disabled={allOn}
-          aria-label="Show all kinds"
-          style={{
-            font: 'inherit',
-            fontSize: `${0.66 * fontPx}px`,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-            cursor: allOn ? 'default' : 'pointer',
-            color: allOn ? 'var(--color-muted)' : 'var(--color-accent1)',
-            background: 'transparent',
-            border: `1px solid ${allOn ? 'var(--color-border)' : 'var(--color-accent1)'}`,
-            borderRadius: `${0.4 * fontPx}px`,
-            padding: `${0.12 * fontPx}px ${0.45 * fontPx}px`,
-            opacity: allOn ? 0.5 : 1,
-            transition: 'opacity 0.2s ease, color 0.2s ease, border-color 0.2s ease',
-          }}
-        >
-          All
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: `${0.3 * fontPx}px` }}>
+          <button
+            type="button"
+            onClick={onReset}
+            disabled={allOn}
+            aria-label="Show all kinds"
+            style={{
+              font: 'inherit',
+              fontSize: `${0.66 * fontPx}px`,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              cursor: allOn ? 'default' : 'pointer',
+              color: allOn ? 'var(--color-muted)' : 'var(--color-accent1)',
+              background: 'transparent',
+              border: `1px solid ${allOn ? 'var(--color-border)' : 'var(--color-accent1)'}`,
+              borderRadius: `${0.4 * fontPx}px`,
+              padding: `${0.12 * fontPx}px ${0.45 * fontPx}px`,
+              opacity: allOn ? 0.5 : 1,
+              transition: 'opacity 0.2s ease, color 0.2s ease, border-color 0.2s ease',
+            }}
+          >
+            All
+          </button>
+          {/* Collapse control: shrinks the panel to a compact chip so it never
+              obscures the plays. Only rendered when the consumer opts in. */}
+          {collapsible ? (
+            <button
+              type="button"
+              onClick={onToggleCollapsed}
+              aria-expanded={true}
+              aria-label="Hide plays legend"
+              title="Hide legend"
+              style={{
+                font: 'inherit',
+                lineHeight: 0,
+                cursor: 'pointer',
+                color: 'var(--color-muted)',
+                background: 'transparent',
+                border: '1px solid var(--color-border)',
+                borderRadius: `${0.4 * fontPx}px`,
+                padding: `${0.12 * fontPx}px ${0.3 * fontPx}px`,
+                transition: 'color 0.2s ease, border-color 0.2s ease',
+              }}
+            >
+              {/* Minus / collapse glyph, sized off the font scale. */}
+              <svg
+                width={0.8 * fontPx}
+                height={0.8 * fontPx}
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M3 8h10"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {legend.map((e) => {
@@ -783,7 +919,7 @@ function HoverLabel({
   unit: number;
   view: { width: number; height: number };
 }) {
-  const fontSize = 22 * unit;
+  const fontSize = 26 * unit;
   const padX = 12 * unit;
   const padY = 8 * unit;
   // Rough text width estimate (monospace ≈ 0.6em per char) for the chip width.

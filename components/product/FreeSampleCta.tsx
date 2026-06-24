@@ -48,12 +48,12 @@ export default function FreeSampleCta({ className }: FreeSampleCtaProps) {
 
           <h2
             id="free-sample-heading"
-            className="font-display font-bold leading-[1.1] tracking-tight text-text text-[clamp(1.75rem,5vw,3rem)]"
+            className="font-display font-bold leading-[1.1] tracking-tight text-text text-[clamp(1.75rem,5vw,3.5rem)]"
           >
             Try a real match, fully analyzed, free.
           </h2>
 
-          <p className="max-w-xl font-body text-base leading-relaxed text-muted sm:text-lg lg:text-[1.1875rem]">
+          <p className="max-w-xl font-body text-base leading-relaxed text-muted sm:text-lg lg:text-[1.3125rem]">
             Pick a sport and unlock one complete game on the house: the same
             spatial maps, advanced metric table and momentum trend your coaching
             staff would get on every report. No setup, no commitment.

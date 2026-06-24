@@ -535,10 +535,10 @@ export function TrendChart({
   // too small on desktop. Lifted a couple of px so they sit comfortably. The
   // chart renders at the same size on mobile and desktop, so this is a small,
   // safe flat bump (it was simply undersized before, most visible on desktop).
-  const tick = { fill: theme.muted, fontSize: 13, fontFamily: 'var(--font-mono)' } as const;
+  const tick = { fill: theme.muted, fontSize: 15, fontFamily: 'var(--font-mono)' } as const;
   const axisLabelStyle = {
     fill: theme.muted,
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: 'var(--font-mono)',
     letterSpacing: '0.08em',
   } as const;
@@ -552,11 +552,11 @@ export function TrendChart({
       <header className="mb-3">
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
           <div className="min-w-0">
-            <h3 className="font-display text-sm font-semibold uppercase tracking-[0.14em] text-text lg:text-base">
+            <h3 className="font-display text-sm font-semibold uppercase tracking-[0.14em] text-text sm:text-base lg:text-lg">
               {title}
             </h3>
             {subtitle && (
-              <p className="mt-0.5 font-mono text-[0.7rem] text-muted lg:text-xs">{subtitle}</p>
+              <p className="mt-0.5 font-mono text-[0.7rem] text-muted sm:text-xs lg:text-sm">{subtitle}</p>
             )}
           </div>
 
@@ -574,12 +574,12 @@ export function TrendChart({
                       className="inline-block h-2.5 w-2.5 rounded-full"
                       style={{ backgroundColor: colors[i] }}
                     />
-                    <span className="font-mono text-[0.65rem] uppercase tracking-wider text-muted lg:text-xs">
+                    <span className="font-mono text-[0.65rem] uppercase tracking-wider text-muted sm:text-xs lg:text-sm">
                       {s.name}
                     </span>
                     {stat && (
                       <span
-                        className="font-mono text-[0.72rem] font-semibold tabular-nums lg:text-[0.8rem]"
+                        className="font-mono text-[0.72rem] font-semibold tabular-nums sm:text-[0.8rem] lg:text-[0.9375rem]"
                         style={{ color: colors[i] }}
                       >
                         {fmtUnit(stat.last, unit, stat.ref)}
@@ -588,7 +588,7 @@ export function TrendChart({
                   </div>
                   {stat && (
                     <span
-                      className="ml-4 flex items-center gap-1 font-mono text-[0.6rem] tabular-nums"
+                      className="ml-4 flex items-center gap-1 font-mono text-[0.6rem] tabular-nums sm:text-[0.7rem] lg:text-[0.8125rem]"
                       style={{
                         color:
                           stat.dir === 'up'
@@ -705,7 +705,7 @@ export function TrendChart({
               tick={tick}
               tickLine={false}
               axisLine={false}
-              width={52}
+              width={58}
               tickFormatter={(v: number) => fmt(v)}
               tickCount={5}
               domain={['auto', 'auto']}
@@ -726,7 +726,7 @@ export function TrendChart({
                 tick={tick}
                 tickLine={false}
                 axisLine={false}
-                width={52}
+                width={58}
                 tickFormatter={(v: number) => fmt(v)}
                 tickCount={5}
                 domain={['auto', 'auto']}
@@ -894,13 +894,13 @@ function LastValueLabel(props: {
   if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
 
   const text = fmtUnit(num, unit, valueRef);
-  const padX = 6;
+  const padX = 7;
   // charW + h track the pin's fontSize (bumped below) so the pill stays sized
   // to its text. The in-SVG pin is fixed px, so this lifts it on every screen;
   // it simply read too small before, most noticeably on a large desktop.
-  const charW = 7.4;
+  const charW = 8.4;
   const w = text.length * charW + padX * 2;
-  const h = 19;
+  const h = 22;
   // Offset the pill above/below the point to reduce overlap when two series
   // end near each other.
   const dy = nudgeUp ? -(h + 8) : 8;
@@ -908,7 +908,7 @@ function LastValueLabel(props: {
   const rectY = cy + dy;
   // PEAK badge always clears the topmost of {point, value-pill}, so it never
   // collides with the data point or the pill regardless of nudge direction.
-  const badgeH = 14;
+  const badgeH = 17;
   const badgeY = Math.min(rectY, cy) - badgeH - 5;
 
   // The pin appears only once the line has finished drawing. Opacity is driven
@@ -943,7 +943,7 @@ function LastValueLabel(props: {
         textAnchor="middle"
         dominantBaseline="central"
         fill={color}
-        fontSize={12}
+        fontSize={14}
         fontFamily="var(--font-mono)"
         fontWeight={700}
       >
@@ -956,7 +956,7 @@ function LastValueLabel(props: {
           clear above the point + value pill, centred on the data point. */}
       {isPeak &&
         (() => {
-          const badgeW = 42;
+          const badgeW = 48;
           // Keep the chip inside the plot box horizontally near the right edge.
           let bx = cx - badgeW / 2;
           if (bx < 2) bx = 2;
@@ -969,7 +969,7 @@ function LastValueLabel(props: {
                 textAnchor="middle"
                 dominantBaseline="central"
                 fill={surface}
-                fontSize={8.5}
+                fontSize={10}
                 fontFamily="var(--font-mono)"
                 fontWeight={700}
                 letterSpacing="0.12em"
@@ -1007,12 +1007,12 @@ function PeakLabel(props: {
   if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
 
   const labelText = `PEAK ${text}`;
-  const padX = 7;
+  const padX = 8;
   // charW + h track the flag's fontSize (bumped below) so the pill stays sized
   // to its text. Fixed-px in-SVG label, lifted a step for desktop legibility.
-  const charW = 7;
+  const charW = 8;
   const w = labelText.length * charW + padX * 2;
-  const h = 20;
+  const h = 23;
   const gap = 12; // clearance above the point for the pennant
   const rectY = cy - gap - h;
   // Keep the pill inside the plot horizontally: clamp around the point.
@@ -1055,7 +1055,7 @@ function PeakLabel(props: {
         textAnchor="middle"
         dominantBaseline="central"
         fill={surface}
-        fontSize={11.5}
+        fontSize={13.5}
         fontFamily="var(--font-mono)"
         fontWeight={700}
         letterSpacing="0.04em"

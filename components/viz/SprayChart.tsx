@@ -195,10 +195,13 @@ export default function SprayChart({ points, pitch, mode = 'spray', className }:
   const stagger = n > 1 ? Math.min(0.04, (totalCap - perMark) / (n - 1)) : 0;
 
   // --- Legend geometry (viewBox units), pinned to the top-left ---------------
+  // Legend text/row bumped a clear step (22→26 font, 32→37 row) so the in-SVG
+  // legend reads comfortably on desktop, where the capped pitch box otherwise
+  // left it undersized relative to the surrounding report type.
   const lgPad = 18 * unit;
-  const lgFont = 22 * unit;
-  const lgRow = 32 * unit;
-  const lgSwatchR = 10 * unit; // radius of the legend disc
+  const lgFont = 26 * unit;
+  const lgRow = 37 * unit;
+  const lgSwatchR = 11 * unit; // radius of the legend disc
   const lgGap = 14 * unit;
   const longest = legend.reduce((m, l) => Math.max(m, l.legend.length), 0);
   const lgTextW = Math.max(96 * unit, longest * lgFont * 0.6);

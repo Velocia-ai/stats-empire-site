@@ -134,7 +134,7 @@ export interface Footer {
 export interface ProvenanceStep {
   stage: string;
   /** Who or what owns this stage. */
-  owner: 'Client' | 'AI' | 'Analyst' | 'Senior';
+  owner: 'Client' | 'AI' | 'Analyst' | 'Senior' | 'Delivery';
   description: string;
 }
 
@@ -283,6 +283,12 @@ export const PROVENANCE: Provenance = {
       owner: 'Senior',
       description:
         'A senior analyst audits the log against the footage and signs off before anything reaches you. Verified, not just generated.',
+    },
+    {
+      stage: 'You get the full report',
+      owner: 'Delivery',
+      description:
+        'The complete, coach-ready report lands in your account: spatial maps, advanced metrics and momentum trends, a video breakdown with clip analysis, and highlight reels cut and ready to coach from.',
     },
   ],
   badge: {

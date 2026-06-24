@@ -34,16 +34,16 @@ export default function WhatsInReport({ content = WHATS_IN_REPORT, className }: 
     >
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal as="header" className="mb-12 max-w-2xl sm:mb-16">
-          <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-accent1 lg:text-[0.8125rem]">
+          <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-accent1 sm:text-[0.8125rem] lg:text-[0.9375rem]">
             {content.eyebrow}
           </p>
           <h2
             id="report-heading"
-            className="mt-4 font-display font-bold leading-[1.1] tracking-tight text-text text-[clamp(1.75rem,5vw,3.5rem)]"
+            className="mt-4 font-display font-bold leading-[1.1] tracking-tight text-text text-[clamp(1.75rem,5vw,4.25rem)]"
           >
             {content.headline}
           </h2>
-          <p className="mt-5 text-base leading-relaxed text-muted sm:text-lg lg:text-[1.1875rem]">
+          <p className="mt-5 text-base leading-relaxed text-muted sm:text-lg lg:text-[1.3125rem]">
             {content.subhead}
           </p>
         </Reveal>
@@ -67,10 +67,10 @@ export default function WhatsInReport({ content = WHATS_IN_REPORT, className }: 
                   </span>
                 </div>
 
-                <h3 className="mt-5 font-display text-xl font-bold text-text lg:text-2xl">
+                <h3 className="mt-5 font-display text-xl font-bold text-text sm:text-2xl lg:text-[1.75rem]">
                   {group.group}
                 </h3>
-                <p className="mt-1.5 text-sm font-medium text-muted lg:text-base">
+                <p className="mt-1.5 text-sm font-medium text-muted sm:text-base lg:text-lg">
                   {group.blurb}
                 </p>
 
@@ -82,7 +82,7 @@ export default function WhatsInReport({ content = WHATS_IN_REPORT, className }: 
                         strokeWidth={2.25}
                         aria-hidden="true"
                       />
-                      <span className="text-sm leading-relaxed text-muted lg:text-base">{item}</span>
+                      <span className="text-sm leading-relaxed text-muted sm:text-base lg:text-lg">{item}</span>
                     </li>
                   ))}
                 </ul>

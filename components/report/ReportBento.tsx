@@ -182,16 +182,16 @@ export default function ReportBento({
           className="mb-12 flex flex-col gap-6 sm:mb-16 sm:flex-row sm:items-end sm:justify-between"
         >
           <div className="max-w-xl">
-            <p className="font-mono text-[0.7rem] font-medium uppercase tracking-[0.3em] text-accent1 lg:text-xs">
+            <p className="font-mono text-[0.7rem] font-medium uppercase tracking-[0.3em] text-accent1 sm:text-xs lg:text-[0.875rem]">
               What you get
             </p>
             <h2
               id="report-bento-heading"
-              className="mt-3 font-display font-bold leading-[1.1] tracking-tight text-text text-[clamp(1.75rem,5vw,3.5rem)]"
+              className="mt-3 font-display font-bold leading-[1.1] tracking-tight text-text text-[clamp(1.75rem,5vw,4.25rem)]"
             >
               A coach-ready report
             </h2>
-            <p className="mt-4 font-body text-sm leading-relaxed text-muted sm:text-base lg:text-[1.0625rem]">
+            <p className="mt-4 font-body text-sm leading-relaxed text-muted sm:text-base lg:text-[1.25rem]">
               Not a spreadsheet dump, a composed intelligence brief. Spatial maps,
               advanced metrics and momentum trends, tuned to {data.displayName.toLowerCase()}.
               Switch the sport and the whole report re-renders to match.
@@ -228,7 +228,7 @@ export default function ReportBento({
               eyebrow={spatial.eyebrow}
               title={spatial.title}
               meta={
-                <span className="font-mono text-[0.65rem] uppercase tracking-wider text-muted">
+                <span className="font-mono text-[0.65rem] uppercase tracking-wider text-muted sm:text-[0.7rem] lg:text-[0.8125rem]">
                   {data.displayName}
                 </span>
               }
@@ -237,7 +237,7 @@ export default function ReportBento({
               <SpatialStack pitch={pitch} minHeight={340}>
                 <HeroSpatial data={data} pitch={pitch} animate={!prefersReduced} />
               </SpatialStack>
-              <p className="mt-3 font-body text-xs leading-relaxed text-muted">
+              <p className="mt-3 font-body text-xs leading-relaxed text-muted sm:text-sm lg:text-[0.9375rem]">
                 {spatial.caption}{' '}
                 <span className="text-text/80">{outcomeTally(data.spray)}.</span>
               </p>
@@ -267,43 +267,51 @@ export default function ReportBento({
               </SpatialStack>
             </BentoTile>
 
-            {/* TRAJECTORY tile, spans 3/6 cols */}
+            {/* TRAJECTORY tile, a FEATURE tile: spans 4/6 cols x 2 rows so the
+                pitch + drawn paths are large and clearly legible on desktop,
+                matching the hero's dominant proportion. The field gets a tall
+                floor so the lines have room to breathe and never read cramped. */}
             <BentoTile
+              hero
               index={3}
               contentKey={sport}
               eyebrow="Movement"
               title="Trajectories"
               meta={
-                <span className="font-mono text-[0.65rem] uppercase tracking-wider text-muted">
+                <span className="font-mono text-[0.65rem] uppercase tracking-wider text-muted sm:text-[0.7rem] lg:text-[0.8125rem]">
                   {data.trajectories.length} paths
                 </span>
               }
-              className="sm:col-span-1 lg:col-span-3"
+              className="sm:col-span-2 lg:col-span-4 lg:row-span-2"
             >
-              {/* A touch more floor height than the other spatial tiles so the
-                  interactive TrajectoryLines legend (top-left, scales with the
-                  viewBox) has room to breathe and its rows stay comfortably
-                  clickable without crowding the drawn paths. */}
-              <SpatialStack pitch={pitch} minHeight={300}>
+              {/* Large field floor so the paths are big and legible. The legend
+                  now docks to a corner inside the SVG (see legendPlacement) so it
+                  never covers the plays, leaving the full field for the lines. */}
+              <SpatialStack pitch={pitch} minHeight={460}>
                 <TrajectoryLines
                   paths={data.trajectories}
                   pitch={pitch}
                   animate={!prefersReduced}
+                  legendPlacement="bottom-right"
+                  legendCollapsible
                   className="absolute inset-0"
                 />
               </SpatialStack>
             </BentoTile>
 
-            {/* MOMENTUM / trend tile (Recharts), spans 3/6 cols */}
+            {/* MOMENTUM / trend tile (Recharts), spans 2/6 cols x 2 rows so it
+                sits flush beside the Trajectory feature tile and the grid block
+                has no holes (Trajectory 4x2 + Momentum 2x2 fill the full 6 cols
+                across two rows). */}
             <BentoTile
               index={4}
               contentKey={sport}
               eyebrow="Momentum"
               title="Form trend"
               flushBody
-              className="sm:col-span-2 lg:col-span-3"
+              className="sm:col-span-2 lg:col-span-2 lg:row-span-2"
             >
-              <div className="px-5 pb-5 sm:px-6 sm:pb-6">
+              <div className="flex flex-1 items-center px-5 pb-5 sm:px-6 sm:pb-6">
                 <TrendChart
                   label={data.trend.label}
                   xLabels={data.trend.xLabels}
@@ -320,7 +328,7 @@ export default function ReportBento({
               title="Advanced metrics"
               flushBody
               meta={
-                <span className="font-mono text-[0.65rem] uppercase tracking-wider text-muted">
+                <span className="font-mono text-[0.65rem] uppercase tracking-wider text-muted sm:text-[0.7rem] lg:text-[0.8125rem]">
                   {data.metrics.length} metrics
                 </span>
               }

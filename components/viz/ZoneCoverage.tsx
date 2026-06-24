@@ -152,8 +152,11 @@ export default function ZoneCoverage({
   }, [paintOrder]);
 
   const { width: W, height: H } = proj.view;
-  const labelSize = W * 0.024;
-  const valueSize = W * 0.021;
+  // Zone caption type bumped a clear step (0.024→0.028 label, 0.021→0.025 value)
+  // so the in-SVG labels read comfortably on desktop, where the capped pitch box
+  // otherwise left them undersized next to the surrounding report type.
+  const labelSize = W * 0.028;
+  const valueSize = W * 0.025;
   const stagger = 0.07; // seconds between consecutive zone reveals
   const zoneDur = 0.55;
 
@@ -365,7 +368,9 @@ function Legend({
   const swatchH = viewH * 0.022;
   const gap = viewW * 0.006;
   const stripW = buckets.length * swatchW + (buckets.length - 1) * gap;
-  const tickSize = viewW * 0.018;
+  // Legend tick/title type bumped a step (0.018→0.022) so the VALUE label and
+  // min/max ticks read comfortably on desktop's capped pitch box.
+  const tickSize = viewW * 0.022;
   // Anchor the strip bottom-left, clear of the very edge.
   const ty = viewH - pad - swatchH;
   // Plate behind the whole legend (local coords; the group is translated to the

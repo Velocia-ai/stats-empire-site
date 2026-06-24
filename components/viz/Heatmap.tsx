@@ -187,7 +187,9 @@ export default function Heatmap({ cells, pitch, steps = 7, className }: HeatmapP
     w: Math.min(W, H) * 0.03,
     h: H * 0.26,
     pad: Math.min(W, H) * 0.014,
-    font: Math.min(W, H) * 0.026,
+    // Bumped a clear step (0.026→0.031) so the in-SVG legend reads comfortably
+    // on desktop, where the capped pitch box otherwise left it undersized.
+    font: Math.min(W, H) * 0.031,
   };
 
   // Tiny scale settle pivots on the field centroid so the bloom grows in place.
