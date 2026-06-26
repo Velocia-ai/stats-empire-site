@@ -49,12 +49,12 @@ export default function ProductHero({ className }: ProductHeroProps) {
 
         <h1
           id="product-hero-heading"
-          className="mt-6 font-display font-extrabold leading-[1.05] tracking-tight text-text text-[clamp(2rem,6vw,4.75rem)]"
+          className="mt-6 font-display font-extrabold leading-[1.05] tracking-tight text-text text-[clamp(2rem,5.8vw,5.5rem)]"
         >
           See exactly what lands in your report.
         </h1>
 
-        <p className="mt-5 max-w-xl font-body text-base leading-relaxed text-muted sm:text-lg lg:text-[1.3125rem]">
+        <p className="mt-5 max-w-2xl font-body text-base leading-relaxed text-muted sm:text-lg lg:text-[1.4375rem]">
           One premium, coach-ready surface per match: spatial maps, headline
           stats, an advanced metric table and a momentum trend, all logged by a
           human and signed off by a senior analyst. Toggle the sport below to

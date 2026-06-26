@@ -98,23 +98,124 @@ function HeroSpatial({
   }
 }
 
-/** Compact outcome tally for the hero tile meta (e.g. "9 made · 7 missed"). */
-function outcomeTally(points: SpatialPoint[]): string {
-  const counts = new Map<string, number>();
+// Outcome → visual register, mirrored EXACTLY from SprayChart.styleFor so the
+// HTML breakdown chips below the court read in the same colours as the marks on
+// it. positive = lime accent1, negative = a fixed warm red (the accent2 token
+// is unreliable across themes), neutral = muted.
+type OutcomeKind = 'positive' | 'negative' | 'neutral';
+const NEGATIVE_COLOR = '#ff5a4d';
+const KIND_COLOR: Record<OutcomeKind, string> = {
+  positive: 'var(--color-accent1)',
+  negative: NEGATIVE_COLOR,
+  neutral: 'var(--color-muted)',
+};
+const OUTCOME_KIND: Record<string, OutcomeKind> = {
+  make: 'positive',
+  winner: 'positive',
+  miss: 'negative',
+  error: 'negative',
+  neutral: 'neutral',
+};
+// Label wording differs by spatial register (shot = made/missed, spray =
+// winners/errors), matching the in-SVG legend so chip ↔ mark stay in sync.
+const OUTCOME_LABEL: Record<'spray' | 'shot', Record<string, string>> = {
+  shot: { make: 'Made', miss: 'Missed', winner: 'Made', error: 'Missed', neutral: 'Attempts' },
+  spray: { make: 'Winners', winner: 'Winners', miss: 'Errors', error: 'Errors', neutral: 'In play' },
+};
+const KIND_ORDER: Record<OutcomeKind, number> = { positive: 0, negative: 1, neutral: 2 };
+
+interface OutcomeStat {
+  label: string;
+  count: number;
+  pct: number;
+  kind: OutcomeKind;
+  color: string;
+}
+
+/** Collapse spray points into ordered, de-duped outcome stats (label+count+pct). */
+function outcomeStats(points: SpatialPoint[], mode: 'spray' | 'shot'): OutcomeStat[] {
+  const total = points.length || 1;
+  const acc = new Map<string, OutcomeStat>();
   points.forEach((p) => {
     const o = p.outcome ?? 'neutral';
-    counts.set(o, (counts.get(o) ?? 0) + 1);
+    const kind = OUTCOME_KIND[o] ?? 'neutral';
+    const label = OUTCOME_LABEL[mode][o] ?? o;
+    const cur = acc.get(label);
+    if (cur) {
+      cur.count += 1;
+    } else {
+      acc.set(label, { label, count: 1, pct: 0, kind, color: KIND_COLOR[kind] });
+    }
   });
-  const WORDS: Record<string, string> = {
-    make: 'made',
-    miss: 'missed',
-    winner: 'winners',
-    error: 'errors',
-    neutral: 'touches',
-  };
-  return Array.from(counts.entries())
-    .map(([o, n]) => `${n} ${WORDS[o] ?? o}`)
-    .join(' · ');
+  const stats = Array.from(acc.values());
+  stats.forEach((s) => {
+    s.pct = Math.round((s.count / total) * 100);
+  });
+  return stats.sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind]);
+}
+
+/**
+ * A one-line "read" of the spray distribution: leads with the dominant positive
+ * register and its conversion share, so the tile says something, not just plots.
+ */
+function outcomeRead(stats: OutcomeStat[], noun: string): string {
+  if (stats.length === 0) return 'No events recorded yet.';
+  const total = stats.reduce((s, x) => s + x.count, 0);
+  const positive = stats.find((s) => s.kind === 'positive');
+  if (positive) {
+    return `${positive.count} of ${total} ${noun} were ${positive.label.toLowerCase()} (${positive.pct}% conversion).`;
+  }
+  const top = [...stats].sort((a, b) => b.count - a.count)[0];
+  return `${top.count} of ${total} ${noun} were ${top.label.toLowerCase()}.`;
+}
+
+/**
+ * Compact outcome breakdown rendered as real HTML BELOW the court, inside the
+ * hero spray tile. Fills what used to be dead space with a premium, legible
+ * read: a one-line summary, then a row of count chips that double as the colour
+ * + shape legend (the chip dot matches the on-court mark colour exactly). This
+ * makes the tall hero tile read full and intentional rather than a court
+ * floating above a void.
+ */
+function OutcomeBreakdown({
+  points,
+  mode,
+  noun,
+}: {
+  points: SpatialPoint[];
+  mode: 'spray' | 'shot';
+  noun: string;
+}) {
+  const stats = useMemo(() => outcomeStats(points, mode), [points, mode]);
+  const read = useMemo(() => outcomeRead(stats, noun), [stats, noun]);
+
+  return (
+    <div className="mt-4 flex flex-col gap-3 border-t border-border/60 pt-4">
+      <p className="font-body text-xs leading-relaxed text-muted sm:text-sm lg:text-[0.9375rem]">
+        {read}
+      </p>
+      <ul className="flex flex-wrap gap-2" aria-label="Outcome breakdown">
+        {stats.map((s) => (
+          <li
+            key={s.label}
+            className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-bg/60 px-3 py-1.5"
+          >
+            <span
+              aria-hidden="true"
+              className="inline-block h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-bg/80"
+              style={{ backgroundColor: s.color }}
+            />
+            <span className="font-mono text-[0.8125rem] font-semibold tabular-nums text-text sm:text-sm lg:text-[0.9375rem]">
+              {s.count}
+            </span>
+            <span className="font-body text-[0.75rem] uppercase tracking-wide text-muted sm:text-xs lg:text-[0.8125rem]">
+              {s.label}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 // Stacked spatial layers share ONE frame: the PitchBackground sizes the box via
@@ -137,17 +238,24 @@ function SpatialStack({
   children,
   pitch,
   minHeight = 220,
+  maxWidth,
 }: {
   children: React.ReactNode;
   pitch: PitchType;
   /** Floor on the rendered height (px) so small tiles stay legible. */
   minHeight?: number;
+  /**
+   * Optional per-instance width cap that overrides the shared per-pitch cap.
+   * The spray hero passes a wider cap so the portrait court grows to use more of
+   * its tall tile, while the smaller Zone tile keeps the default compact cap.
+   */
+  maxWidth?: string;
 }) {
   return (
     <div className="flex w-full justify-center">
       <div
         className="relative overflow-hidden rounded-xl bg-bg"
-        style={{ width: '100%', maxWidth: STACK_MAX_W[pitch], minHeight }}
+        style={{ width: '100%', maxWidth: maxWidth ?? STACK_MAX_W[pitch], minHeight }}
       >
         <PitchBackground pitch={pitch} className="block w-full" />
         <div className="absolute inset-0">{children}</div>
@@ -234,13 +342,39 @@ export default function ReportBento({
               }
               className="sm:col-span-2 lg:col-span-4 lg:row-span-2"
             >
-              <SpatialStack pitch={pitch} minHeight={340}>
-                <HeroSpatial data={data} pitch={pitch} animate={!prefersReduced} />
-              </SpatialStack>
-              <p className="mt-3 font-body text-xs leading-relaxed text-muted sm:text-sm lg:text-[0.9375rem]">
-                {spatial.caption}{' '}
-                <span className="text-text/80">{outcomeTally(data.spray)}.</span>
-              </p>
+              {/* Full-height flex column that VERTICALLY CENTERS its content. The
+                  hero spans 2 grid rows, so the tile is taller than the portrait
+                  court + its breakdown; centring the court / caption / breakdown
+                  group splits the leftover height into balanced padding above and
+                  below instead of one dead void under the court, so the tile
+                  reads as an intentional, premium composition top-to-bottom. */}
+              <div className="flex min-h-0 flex-1 flex-col justify-center">
+                <SpatialStack
+                  pitch={pitch}
+                  minHeight={340}
+                  // Portrait courts (tennis) get a wider cap in the tall hero so
+                  // the court uses more of the height; wide pitches already fill.
+                  maxWidth={pitch === 'tennis-court' ? '24rem' : undefined}
+                >
+                  <HeroSpatial data={data} pitch={pitch} animate={!prefersReduced} />
+                </SpatialStack>
+                <p className="mt-3 font-body text-xs leading-relaxed text-muted sm:text-sm lg:text-[0.9375rem]">
+                  {spatial.caption}
+                </p>
+                {/* Spray/shot heroes plot discrete outcomes, so right under the
+                    court the tile carries a real outcome breakdown (count chips
+                    that double as the colour legend) + a one-line read, filling
+                    what was an empty void and making the tall hero tile read full
+                    and premium. Heatmap / passmap heroes have their own self-
+                    contained legends, so they keep just the caption. */}
+                {(data.spatialKind === 'spray' || data.spatialKind === 'shot') && (
+                  <OutcomeBreakdown
+                    points={data.spray}
+                    mode={data.spatialKind === 'shot' ? 'shot' : 'spray'}
+                    noun={data.spatialKind === 'shot' ? 'attempts' : 'balls in play'}
+                  />
+                )}
+              </div>
             </BentoTile>
 
             {/* HEADLINE numbers, wide-ish, spans 2/6 cols */}
@@ -284,10 +418,19 @@ export default function ReportBento({
               }
               className="sm:col-span-2 lg:col-span-4 lg:row-span-2"
             >
-              {/* Large field floor so the paths are big and legible. The legend
-                  now docks to a corner inside the SVG (see legendPlacement) so it
-                  never covers the plays, leaving the full field for the lines. */}
-              <SpatialStack pitch={pitch} minHeight={460}>
+              {/* The field gets a generous floor so the paths stay big and
+                  legible, while a portrait-court width cap stops the tall field
+                  from eating the whole 2-row tile. That leaves clear vertical
+                  room in this tile for the bigger interactive legend the
+                  TrajectoryLines viz renders beneath the field, so nothing reads
+                  cramped or clipped. */}
+              <SpatialStack
+                pitch={pitch}
+                minHeight={360}
+                // Cap portrait courts (tennis) so the tall field leaves room
+                // below it for the bigger legend; wide pitches already fit.
+                maxWidth={pitch === 'tennis-court' ? '15rem' : undefined}
+              >
                 <TrajectoryLines
                   paths={data.trajectories}
                   pitch={pitch}
@@ -311,7 +454,7 @@ export default function ReportBento({
               flushBody
               className="sm:col-span-2 lg:col-span-2 lg:row-span-2"
             >
-              <div className="flex flex-1 items-center px-5 pb-5 sm:px-6 sm:pb-6">
+              <div className="flex flex-1 items-center px-5 pb-5 sm:px-6 sm:pb-6 lg:px-7 lg:pb-7">
                 <TrendChart
                   label={data.trend.label}
                   xLabels={data.trend.xLabels}
@@ -334,7 +477,7 @@ export default function ReportBento({
               }
               className="sm:col-span-2 lg:col-span-6"
             >
-              <div className="px-5 pb-5 sm:px-6 sm:pb-6">
+              <div className="px-5 pb-5 sm:px-6 sm:pb-6 lg:px-7 lg:pb-7">
                 <MetricTable rows={data.metrics} />
               </div>
             </BentoTile>

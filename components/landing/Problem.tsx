@@ -34,16 +34,16 @@ export default function Problem({ content = PROBLEM, className }: ProblemProps) 
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         {/* Section header */}
         <Reveal as="header" className="mb-12 max-w-2xl sm:mb-16">
-          <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-muted">
+          <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-muted lg:text-sm">
             {content.eyebrow}
           </p>
           <h2
             id="problem-heading"
-            className="mt-4 font-display text-[clamp(1.75rem,5vw,3rem)] font-bold leading-[1.05] text-text"
+            className="mt-4 font-display text-[clamp(1.75rem,4.8vw,3.75rem)] font-bold leading-[1.05] text-text"
           >
             {content.headline}
           </h2>
-          <p className="mt-5 text-base leading-relaxed text-muted sm:text-lg">
+          <p className="mt-5 text-base leading-relaxed text-muted sm:text-lg lg:text-xl">
             {content.subhead}
           </p>
         </Reveal>

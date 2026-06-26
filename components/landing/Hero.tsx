@@ -130,7 +130,7 @@ function HeroView({
           <Reveal
             as="h1"
             index={1}
-            className="font-display font-extrabold leading-[1.04] tracking-tight text-text [font-size:clamp(2.25rem,6vw,3.75rem)]"
+            className="font-display font-extrabold leading-[1.04] tracking-tight text-text [font-size:clamp(2.25rem,5.6vw,4.5rem)]"
           >
             {HERO.headline}
           </Reveal>
@@ -138,7 +138,7 @@ function HeroView({
           <Reveal
             as="p"
             index={2}
-            className="max-w-xl font-body text-base leading-relaxed text-muted sm:text-lg"
+            className="max-w-xl font-body text-base leading-relaxed text-muted sm:text-lg lg:text-xl"
           >
             {HERO.subhead}
           </Reveal>
@@ -197,18 +197,27 @@ function HeroView({
             </div>
           </Reveal>
 
-          {/* Proof stat strip, calm: numerals read as text, not a second lime field. */}
+          {/* Proof stat strip: compact high-contrast chips so the trust
+              figures stay legible over the animated court background instead of
+              washing out. Each chip leads with its kicker, then the big value. */}
           <Reveal
             as="dl"
             index={6}
-            className="mt-2 grid w-full grid-cols-2 gap-x-6 gap-y-5 border-t border-border/60 pt-7 sm:grid-cols-4 lg:max-w-xl"
+            className="mt-3 grid w-full grid-cols-2 gap-2.5 sm:grid-cols-4 lg:max-w-2xl"
           >
             {PROOF_STATS.map((s) => (
-              <div key={s.label} className="flex flex-col gap-1">
-                <dt className="font-display text-2xl font-extrabold tracking-tight text-text sm:text-3xl">
+              <div
+                key={s.label}
+                className="flex flex-col gap-1 rounded-xl border border-border bg-surface/70 px-4 py-3.5 backdrop-blur-sm"
+              >
+                {s.kicker ? (
+                  <span className="font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-muted">
+                    {s.kicker}
+                  </span>
+                ) : null}
+                <dt className="font-display text-2xl font-extrabold leading-none tracking-tight text-text sm:text-[1.7rem]">
                   {s.value}
                 </dt>
-                <dd className="font-body text-[0.7rem] leading-snug text-muted">{s.label}</dd>
               </div>
             ))}
           </Reveal>

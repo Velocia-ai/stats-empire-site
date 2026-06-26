@@ -25,8 +25,25 @@ export interface Hero {
 }
 
 export interface ProofStat {
+  /** The headline figure or short claim, rendered large (e.g. "12-24h", "5"). */
   value: string;
+  /** One-line supporting sentence under the value. */
   label: string;
+  /**
+   * Tiny uppercase kicker shown above the value for hierarchy
+   * (e.g. "Logged", "Audited"). Optional.
+   */
+  kicker?: string;
+  /**
+   * Icon key the proof-stat components map to a lucide icon. Keeps content
+   * declarative without importing React into lib/content. Optional.
+   */
+  icon?: 'logged' | 'audited' | 'turnaround' | 'sports';
+  /**
+   * When true the card reads as the accent/“hero” stat (lime treatment).
+   * Use sparingly, one per row, to anchor the eye. Optional.
+   */
+  accent?: boolean;
 }
 
 export interface ProblemPoint {
@@ -184,10 +201,31 @@ export const HERO: Hero = {
 // --- Proof stats -------------------------------------------------------------
 
 export const PROOF_STATS: ProofStat[] = [
-  { value: 'Human-verified', label: 'Every report logged and corrected by a trained analyst' },
-  { value: 'Senior-audited', label: 'A senior analyst reviews and signs off before delivery' },
-  { value: '12-24h', label: 'Express turnaround available on any match' },
-  { value: '5', label: 'Sports covered, led by tennis, soccer & basketball' },
+  {
+    kicker: 'Logged by people',
+    value: '100%',
+    label: 'Every event charted and corrected by a trained human analyst, never raw AI output.',
+    icon: 'logged',
+  },
+  {
+    kicker: 'Signed off',
+    value: 'Senior audit',
+    label: 'A senior analyst reviews and approves each report before it ever reaches you.',
+    icon: 'audited',
+  },
+  {
+    kicker: 'Turnaround',
+    value: '12-24h',
+    label: 'Coach-ready delivery on any match, with express slots when you need it sooner.',
+    icon: 'turnaround',
+    accent: true,
+  },
+  {
+    kicker: 'Coverage',
+    value: '5 sports',
+    label: 'Led by tennis, soccer and basketball, with two more on the same human-led standard.',
+    icon: 'sports',
+  },
 ];
 
 // --- Problem (why hybrid beats single-mode) ----------------------------------

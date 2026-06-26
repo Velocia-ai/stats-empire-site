@@ -95,12 +95,12 @@ export default function MultiSportCoverage({ className }: MultiSportCoverageProp
           </p>
           <h2
             id="coverage-heading"
-            className="mt-3 font-display font-bold leading-[1.1] tracking-tight text-[clamp(1.75rem,5vw,3rem)]"
+            className="mt-3 font-display font-bold leading-[1.1] tracking-tight text-[clamp(1.75rem,4.8vw,3.75rem)]"
           >
             Three sports we live in.
             <br className="hidden sm:block" /> Five we cover end to end.
           </h2>
-          <p className="mx-auto mt-4 max-w-xl font-body text-base leading-relaxed text-muted">
+          <p className="mx-auto mt-4 max-w-xl font-body text-base leading-relaxed text-muted lg:text-lg">
             Tennis, soccer and basketball lead everything we do, tagged deepest,
             shipped fastest. Baseball/softball and American Football round out
             the roster.

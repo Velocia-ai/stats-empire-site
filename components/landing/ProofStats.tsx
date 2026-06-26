@@ -2,16 +2,21 @@
 
 // Stats Empire, ProofStats
 //
-// A calm proof strip that sits directly under the hero. Each stat's numeral
-// counts up gently from zero when it scrolls into view. Numerals are
-// tabular-nums so they don't jitter mid-count.
+// A premium proof strip that sits directly under the hero. Each stat now lives
+// in its own high-contrast card (solid surface + border + soft shadow) so the
+// figures stay crisply legible over the animated court background instead of
+// washing out against it. Each card carries an icon, a small uppercase kicker
+// for hierarchy, a large value and a one-line claim. One card per row reads as
+// the accent ("hero") stat in lime to anchor the eye.
 //
-// Refined for restraint: no grid-texture, no per-stat chalk underline, and no
-// hard cell dividers, whitespace separates the figures instead. The cells
-// enter with the shared <Reveal> primitive (subtle, capped stagger).
+// Where the value contains a number, its numeral counts up gently from zero
+// when it scrolls into view (tabular-nums so it doesn't jitter mid-count).
 //
 // Reduced-motion safe: when the user prefers reduced motion we skip the count
-// and render the final value immediately (Reveal also settles statically).
+// and render the final value immediately. The shared <Reveal> primitive owns
+// the entrance fade and keeps opacity REACT-controlled, so the framer count-up
+// (which only drives the displayed number, a different property) can never
+// override the resting visible state.
 
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -21,6 +26,13 @@ import {
   animate,
 } from 'framer-motion';
 import clsx from 'clsx';
+import {
+  ClipboardCheck,
+  ShieldCheck,
+  Timer,
+  Trophy,
+  type LucideIcon,
+} from 'lucide-react';
 import { PROOF_STATS } from '@/lib/content';
 import type { ProofStat } from '@/lib/content';
 import Reveal from '@/components/Reveal';
@@ -30,6 +42,15 @@ interface ProofStatsProps {
   stats?: ProofStat[];
   className?: string;
 }
+
+// Map the declarative icon key (kept in lib/content) to a concrete lucide icon
+// here, where React/JSX lives. Falls back to the audit shield.
+const ICONS: Record<NonNullable<ProofStat['icon']>, LucideIcon> = {
+  logged: ClipboardCheck,
+  audited: ShieldCheck,
+  turnaround: Timer,
+  sports: Trophy,
+};
 
 // Split a display value like "100%", "$29", "24h", "5" into the parts we need
 // to animate: a numeric target plus the prefix/suffix glyphs that frame it.
@@ -73,7 +94,7 @@ function CountUp({
     return () => controls.stop();
   }, [active, reduce, target, mv]);
 
-  // Text-only proof points (e.g. "Human-verified") have no number to count up.
+  // Text-only proof points (e.g. "Senior audit") have no number to count up.
   // Render them as-is so we never prepend a meaningless "0".
   if (!/\d/.test(value)) {
     return <span aria-hidden="true">{value}</span>;
@@ -104,24 +125,65 @@ export default function ProofStats({ stats = PROOF_STATS, className }: ProofStat
     >
       <div
         ref={ref}
-        className="mx-auto grid max-w-6xl grid-cols-2 gap-x-8 gap-y-12 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-4 lg:gap-x-12"
+        className="mx-auto grid max-w-6xl grid-cols-1 gap-5 px-5 py-16 sm:grid-cols-2 sm:px-8 sm:py-20 lg:grid-cols-4 lg:gap-6 lg:py-24"
       >
-        {stats.map((stat, idx) => (
-          <Reveal
-            key={stat.label}
-            index={idx}
-            className="flex flex-col gap-2"
-          >
-            <span className="font-display text-4xl font-bold leading-none text-text sm:text-5xl">
-              <span className="sr-only">{stat.value}</span>
-              <CountUp value={stat.value} active={active} />
-            </span>
+        {stats.map((stat, idx) => {
+          const Icon = stat.icon ? ICONS[stat.icon] : ShieldCheck;
+          return (
+            <Reveal
+              key={stat.label}
+              index={idx}
+              className={clsx(
+                'group relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl border p-6 shadow-lg backdrop-blur-sm transition-colors lg:p-7',
+                stat.accent
+                  ? 'border-accent1/55 bg-accent1/[0.09] shadow-accent1/10'
+                  : 'border-border bg-surface/85 hover:border-muted/60',
+              )}
+            >
+              {/* Icon chip + uppercase kicker, the hierarchy row. */}
+              <div className="flex items-center gap-3">
+                <span
+                  aria-hidden
+                  className={clsx(
+                    'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border',
+                    stat.accent
+                      ? 'border-accent1/45 bg-accent1/15 text-accent1'
+                      : 'border-border bg-surfaceAlt text-accent1',
+                  )}
+                >
+                  <Icon className="h-[1.35rem] w-[1.35rem]" strokeWidth={2} />
+                </span>
+                {stat.kicker ? (
+                  <span
+                    className={clsx(
+                      'font-mono text-[0.7rem] font-semibold uppercase tracking-[0.22em]',
+                      stat.accent ? 'text-accent1' : 'text-muted',
+                    )}
+                  >
+                    {stat.kicker}
+                  </span>
+                ) : null}
+              </div>
 
-            <p className="font-mono text-xs leading-relaxed text-muted sm:text-[0.8rem]">
-              {stat.label}
-            </p>
-          </Reveal>
-        ))}
+              {/* The headline figure, large and bold for real presence. */}
+              <span
+                className={clsx(
+                  'font-display text-[2.5rem] font-extrabold leading-none tracking-tight sm:text-5xl lg:text-[3.25rem]',
+                  stat.accent ? 'text-accent1' : 'text-text',
+                )}
+              >
+                <span className="sr-only">{stat.value}</span>
+                <CountUp value={stat.value} active={active} />
+              </span>
+
+              {/* One-line claim. Higher-contrast than before so it reads over
+                  the animated background, not washed out. */}
+              <p className="font-body text-[0.95rem] leading-relaxed text-text/80">
+                {stat.label}
+              </p>
+            </Reveal>
+          );
+        })}
       </div>
     </section>
   );

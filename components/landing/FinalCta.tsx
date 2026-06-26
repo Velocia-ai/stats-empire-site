@@ -80,12 +80,12 @@ function FinalCtaView({
 
             <h2
               id="final-cta-heading"
-              className="font-display font-bold leading-[1.05] tracking-tight text-[clamp(1.875rem,6vw,3rem)]"
+              className="font-display font-bold leading-[1.05] tracking-tight text-[clamp(1.875rem,5.6vw,3.75rem)]"
             >
               Turn footage into wins.
             </h2>
 
-            <p className="max-w-xl font-body text-base leading-relaxed text-muted sm:text-lg">
+            <p className="max-w-xl font-body text-base leading-relaxed text-muted sm:text-lg lg:text-xl">
               {FINAL_CTA.subhead}
             </p>
 

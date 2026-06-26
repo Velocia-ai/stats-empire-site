@@ -95,6 +95,33 @@
     text-rendering: optimizeLegibility;
   }
 
+  /*
+   * DESKTOP TYPOGRAPHY SCALE-UP (single, surgical lever).
+   *
+   * The page sizes nearly everything in rem-based Tailwind utilities
+   * (text-base, text-lg, text-4xl, gap-*, p-*, etc.) plus a few clamp()s.
+   * Bumping the root font-size on large screens scales ALL of those
+   * proportionally in one place, so headings, body copy, eyebrows, cards,
+   * paddings and gaps all read a confident step bigger on a big screen,
+   * without touching mobile (where the user says sizing is already right).
+   *
+   * Mobile/tablet keep the browser default 16px root. We step the root up
+   * only from the lg breakpoint and again on very wide screens, so the
+   * increase is felt exactly where the complaint lives (desktop), roughly
+   * +12.5% at lg and +18.75% on xl+. clamp()-based headings additionally
+   * get raised upper bounds below so they don't cap out too early.
+   */
+  @media (min-width: 1024px) {
+    html {
+      font-size: 18px;
+    }
+  }
+  @media (min-width: 1440px) {
+    html {
+      font-size: 19px;
+    }
+  }
+
   h1,
   h2,
   h3,

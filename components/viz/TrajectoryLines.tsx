@@ -300,9 +300,18 @@ export default function TrajectoryLines({
   // Rendering the legend as real HTML <button>s inside a <foreignObject> keeps
   // it locked to the field coordinate space (so it aligns across every consumer
   // exactly like the old in-SVG legend) while giving native focus, keyboard and
-  // ARIA semantics that an <svg>-only control can't. The box auto-sizes to the
-  // content; we pin it top-left with a small inset.
-  const foPad = 14 * unit;
+  // ARIA semantics that an <svg>-only control can't.
+  //
+  // READABILITY: a foreignObject's CSS px are SVG USER units, so they get scaled
+  // DOWN by preserveAspectRatio when the ~1000-unit viewBox is fit into a small
+  // tile (typically 2-3x downscale). The old `Math.max(13, 26*unit)` therefore
+  // rendered genuinely tiny on screen. We instead size the legend as a fixed
+  // FRACTION of the viewBox width, so it stays a consistent, comfortably-readable
+  // share of the rendered tile on every pitch regardless of how far it downscales.
+  // ~3.4% of width lands near a real ~14-16px once the tile is laid out, with a
+  // generous floor so even a tightly-capped box never collapses to micro-type.
+  const legendFont = Math.max(28, vw * 0.034);
+  const foPad = legendFont * 0.5;
 
   return (
     <svg
@@ -345,165 +354,149 @@ export default function TrajectoryLines({
       </defs>
 
       <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-        {/* Dark casing under each stroke: a slightly wider bg-coloured line so
-            distinct-colour paths stay crisp and separated where they cross.
-            Casing tracks the same visibility/dim state as its line. */}
-        {lines.map((l, i) => {
-          const on = isOn(l.kind);
-          const casingOpacity = on ? 0.55 : 0.05;
-          return shouldAnimate ? (
-            <motion.path
-              key={`${l.id}-casing`}
-              d={l.d}
-              stroke="var(--color-bg)"
-              strokeWidth={l.width + 2.4 * unit}
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{
-                pathLength: { duration: drawDur, ease: 'easeInOut', delay: i * stagger },
-              }}
-              // strokeOpacity is React-controlled (selection-driven), NOT framer,
-              // so a finished framer/WAAPI animation can never override the toggle.
-              style={{ strokeOpacity: casingOpacity, transition: 'stroke-opacity 0.25s ease' }}
-            />
-          ) : (
-            <path
-              key={`${l.id}-casing`}
-              d={l.d}
-              stroke="var(--color-bg)"
-              strokeWidth={l.width + 2.4 * unit}
-              style={{ strokeOpacity: casingOpacity, transition: 'stroke-opacity 0.25s ease' }}
-            />
-          );
-        })}
-
-        {/* Paths, each in its kind colour with a matching directional arrowhead.
-            Visibility/dim + hover-emphasis are driven by the selection + hover
-            state. The draw-on animates pathLength/opacity IN once; the resting
-            opacity afterwards is controlled via the `animate` target so a line
-            NEVER ends hidden. */}
+        {/* WHOLE-PLAY GROUPS. Each play (its dark casing, its coloured line WITH
+            the directional arrowhead marker, its travelling head, and its hollow
+            origin dot) lives inside ONE <g> whose opacity is React-controlled
+            from the selection + hover state. Putting the toggle opacity on the
+            GROUP, not the individual elements, is what makes on/off unmistakable:
+            the arrowhead marker is part of this subtree, so it dims together with
+            its line and dot as a single unit (markerEnd does not reliably inherit
+            a sibling path's own opacity across browsers, but it DOES fade with an
+            ancestor <g opacity>). framer only ever animates pathLength / the head
+            offset / the dot pop scale, never opacity, so a finished WAAPI run can
+            never stomp the inline group opacity. */}
         {lines.map((l, i) => {
           const on = isOn(l.kind);
           const isHot = hovered === l.kind;
           const anyHover = hovered !== null;
-          // Resting opacity: dim hard when toggled off; when something is hovered,
-          // lift the hovered kind and softly mute the rest; otherwise base.
-          const restOpacity = !on
-            ? 0.08
-            : anyHover
-              ? isHot
-                ? Math.min(1, l.baseOpacity + 0.25)
-                : l.baseOpacity * 0.4
-              : l.baseOpacity;
+          // Per-PLAY opacity (drives the whole group incl. the arrowhead):
+          //  - OFF  → decisively faint (0.06) so on/off is obvious at a glance.
+          //  - ON, something else hovered → softly muted (0.34) to push it back.
+          //  - ON + hovered, or ON + nothing hovered → full strength.
+          const groupOpacity = !on ? 0.06 : anyHover && !isHot ? 0.34 : 1;
+          // Within an ON play we still let intensity read via per-stroke opacity,
+          // but the GROUP opacity is what the toggle drives. Hover bumps weight.
+          const lineOpacity = l.baseOpacity;
+          const casingOpacity = 0.55;
+          const dotOpacity = isHot ? 1 : Math.max(l.baseOpacity, 0.7);
           const restWidth = isHot && on ? l.width + 1.4 * unit : l.width;
-          const common = {
-            stroke: l.color,
-            filter: `url(#${glowId})`,
-            markerEnd: `url(#${uid}-arrow-${l.markerKey})`,
-            onMouseEnter: () => setHovered(l.kind),
-            onMouseLeave: () => setHovered((h) => (h === l.kind ? null : h)),
-            style: { cursor: 'pointer' as const },
-          };
-          return shouldAnimate ? (
-            <motion.path
-              key={l.id}
-              d={l.d}
-              strokeWidth={restWidth}
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{
-                pathLength: { duration: drawDur, ease: 'easeInOut', delay: i * stagger },
-                strokeWidth: { duration: 0.18 },
-              }}
-              stroke={common.stroke}
-              filter={common.filter}
-              markerEnd={common.markerEnd}
-              onMouseEnter={common.onMouseEnter}
-              onMouseLeave={common.onMouseLeave}
-              // opacity React-controlled (selection/hover), NOT framer, so toggling
-              // a kind reliably dims it (a finished framer animation cannot override).
-              style={{ ...common.style, opacity: restOpacity, transition: 'opacity 0.25s ease, stroke-width 0.18s ease' }}
-            />
-          ) : (
-            <path
-              key={l.id}
-              d={l.d}
-              strokeWidth={restWidth}
-              style={{
-                ...common.style,
-                opacity: restOpacity,
-                transition: 'opacity 0.25s ease, stroke-width 0.18s ease',
-              }}
-              stroke={common.stroke}
-              filter={common.filter}
-              markerEnd={common.markerEnd}
-              onMouseEnter={common.onMouseEnter}
-              onMouseLeave={common.onMouseLeave}
-            />
-          );
-        })}
-
-        {/* Travelling head: a bright dot rides the leading edge of each visible
-            stroke as it draws on, then fades, so the eye follows the play's
-            direction. Only while animating, only for on + real paths. */}
-        {shouldAnimate &&
-          lines.map((l, i) =>
-            l.d && isOn(l.kind) ? (
-              <motion.circle
-                key={`${l.id}-head`}
-                r={headR}
-                cx={0}
-                cy={0}
-                fill={l.color}
-                filter={`url(#${glowId})`}
-                initial={{ opacity: 0, offsetDistance: '0%' }}
-                animate={{ opacity: [0, 1, 1, 0], offsetDistance: '100%' }}
-                transition={{
-                  offsetDistance: { duration: drawDur, ease: 'easeInOut', delay: i * stagger },
-                  opacity: {
-                    duration: drawDur,
-                    delay: i * stagger,
-                    times: [0, 0.12, 0.86, 1],
-                    ease: 'linear',
-                  },
-                }}
-                style={{ offsetPath: `path('${l.d}')`, offsetRotate: '0deg' }}
-              />
-            ) : null,
-          )}
-
-        {/* Origin dots, a hollow node where each play begins so the start of
-            every arrow is unambiguous even when paths overlap. Shares the line's
-            colour + visibility. */}
-        {lines.map((l, i) => {
-          if (!l.start) return null;
-          const on = isOn(l.kind);
-          const isHot = hovered === l.kind;
-          const dotOpacity = !on ? 0.1 : isHot ? 1 : Math.max(l.baseOpacity, 0.7);
+          const casingWidth = l.width + 2.4 * unit;
           return (
-            <motion.circle
-              key={`${l.id}-origin`}
-              cx={l.start[0]}
-              cy={l.start[1]}
-              r={originR}
-              fill="var(--color-bg)"
-              stroke={l.color}
-              strokeWidth={2 * unit}
-              initial={shouldAnimate ? { scale: 0.4 } : false}
-              animate={shouldAnimate ? { scale: 1 } : undefined}
-              // opacity React-controlled (selection-driven); only the pop scale is
-              // framer, so toggling a kind reliably dims its origin dot too.
+            <g
+              key={l.id}
+              // The single source of truth for show/hide. Inline style (not a
+              // framer target) so the toggle always wins over any finished anim.
+              // A toggled-OFF play also stops capturing pointer events so its
+              // faint ghost never intercepts hovers meant for the visible plays.
               style={{
-                transformOrigin: `${l.start[0]}px ${l.start[1]}px`,
-                opacity: dotOpacity,
+                opacity: groupOpacity,
                 transition: 'opacity 0.25s ease',
+                pointerEvents: on ? 'auto' : 'none',
               }}
-              transition={
-                shouldAnimate
-                  ? { duration: 0.3, delay: on ? i * stagger : 0, ease: [0.16, 1, 0.3, 1] }
-                  : undefined
-              }
-            />
+              onMouseEnter={() => setHovered(l.kind)}
+              onMouseLeave={() => setHovered((h) => (h === l.kind ? null : h))}
+            >
+              {/* Dark casing: a slightly wider bg-coloured line so distinct-colour
+                  paths stay crisp where they cross. */}
+              {shouldAnimate ? (
+                <motion.path
+                  d={l.d}
+                  stroke="var(--color-bg)"
+                  strokeWidth={casingWidth}
+                  strokeOpacity={casingOpacity}
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{
+                    pathLength: { duration: drawDur, ease: 'easeInOut', delay: i * stagger },
+                  }}
+                />
+              ) : (
+                <path
+                  d={l.d}
+                  stroke="var(--color-bg)"
+                  strokeWidth={casingWidth}
+                  strokeOpacity={casingOpacity}
+                />
+              )}
+
+              {/* Coloured line in the kind colour, carrying the matching
+                  directional arrowhead via markerEnd. Because the arrowhead is a
+                  child of this group, it dims with the line when toggled OFF. */}
+              {shouldAnimate ? (
+                <motion.path
+                  d={l.d}
+                  stroke={l.color}
+                  strokeWidth={restWidth}
+                  strokeOpacity={lineOpacity}
+                  filter={`url(#${glowId})`}
+                  markerEnd={`url(#${uid}-arrow-${l.markerKey})`}
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{
+                    pathLength: { duration: drawDur, ease: 'easeInOut', delay: i * stagger },
+                    strokeWidth: { duration: 0.18 },
+                  }}
+                  style={{ cursor: 'pointer', transition: 'stroke-width 0.18s ease' }}
+                />
+              ) : (
+                <path
+                  d={l.d}
+                  stroke={l.color}
+                  strokeWidth={restWidth}
+                  strokeOpacity={lineOpacity}
+                  filter={`url(#${glowId})`}
+                  markerEnd={`url(#${uid}-arrow-${l.markerKey})`}
+                  style={{ cursor: 'pointer', transition: 'stroke-width 0.18s ease' }}
+                />
+              )}
+
+              {/* Travelling head: a bright dot rides the leading edge as the
+                  stroke draws on, then fades. Animation only. */}
+              {shouldAnimate && l.d ? (
+                <motion.circle
+                  r={headR}
+                  cx={0}
+                  cy={0}
+                  fill={l.color}
+                  filter={`url(#${glowId})`}
+                  initial={{ opacity: 0, offsetDistance: '0%' }}
+                  animate={{ opacity: [0, 1, 1, 0], offsetDistance: '100%' }}
+                  transition={{
+                    offsetDistance: { duration: drawDur, ease: 'easeInOut', delay: i * stagger },
+                    opacity: {
+                      duration: drawDur,
+                      delay: i * stagger,
+                      times: [0, 0.12, 0.86, 1],
+                      ease: 'linear',
+                    },
+                  }}
+                  style={{ offsetPath: `path('${l.d}')`, offsetRotate: '0deg' }}
+                />
+              ) : null}
+
+              {/* Origin dot: a hollow node marking where the play begins. Shares
+                  the group opacity, so it appears/disappears with the play. */}
+              {l.start ? (
+                <motion.circle
+                  cx={l.start[0]}
+                  cy={l.start[1]}
+                  r={originR}
+                  fill="var(--color-bg)"
+                  stroke={l.color}
+                  strokeWidth={2 * unit}
+                  fillOpacity={1}
+                  strokeOpacity={dotOpacity}
+                  initial={shouldAnimate ? { scale: 0.4 } : false}
+                  animate={shouldAnimate ? { scale: 1 } : undefined}
+                  style={{ transformOrigin: `${l.start[0]}px ${l.start[1]}px` }}
+                  transition={
+                    shouldAnimate
+                      ? { duration: 0.3, delay: i * stagger, ease: [0.16, 1, 0.3, 1] }
+                      : undefined
+                  }
+                />
+              ) : null}
+            </g>
           );
         })}
 
@@ -563,7 +556,7 @@ export default function TrajectoryLines({
               onIsolate={isolate}
               onReset={resetAll}
               onHover={setHovered}
-              unit={unit}
+              fontPx={legendFont}
               collapsible={legendCollapsible}
               collapsed={legendCollapsible && legendCollapsed}
               onToggleCollapsed={() => setLegendCollapsed((c) => !c)}
@@ -594,8 +587,10 @@ interface BuiltLine {
 // --- Interactive legend panel (HTML) ----------------------------------------
 //
 // Each row is a role="checkbox" button: click or Space/Enter toggles its kind.
-// The whole panel scales with `unit` so it matches the SVG's pitch sizing. We
-// re-enable pointer events here (the parent foreignObject lets them pass).
+// The whole panel scales off `fontPx` (sized by the parent as a fraction of the
+// viewBox width) so it stays comfortably readable once the SVG downscales into
+// its tile. We re-enable pointer events here (the parent foreignObject lets them
+// pass).
 function LegendPanel({
   legend,
   isOn,
@@ -605,7 +600,7 @@ function LegendPanel({
   onIsolate,
   onReset,
   onHover,
-  unit,
+  fontPx,
   collapsible = false,
   collapsed = false,
   onToggleCollapsed,
@@ -618,7 +613,12 @@ function LegendPanel({
   onIsolate: (kind: string) => void;
   onReset: () => void;
   onHover: (kind: string | null) => void;
-  unit: number;
+  /**
+   * Base font size in SVG user units, computed by the parent as a fraction of
+   * the viewBox width so the panel stays comfortably readable after the SVG is
+   * downscaled into its tile. All internal spacing scales off this.
+   */
+  fontPx: number;
   /** Allow collapsing the panel down to a single compact chip. */
   collapsible?: boolean;
   /** Whether the panel is currently collapsed (only when `collapsible`). */
@@ -626,11 +626,6 @@ function LegendPanel({
   /** Toggle collapsed state. */
   onToggleCollapsed?: () => void;
 }) {
-  // Scale typography/spacing off `unit` so the panel reads the same physical
-  // size on every pitch (tennis viewBox is smaller, so unit is smaller there).
-  // Bumped a clear step (floor 11→13, 22→26) so the in-SVG legend reads
-  // comfortably on desktop, where the capped pitch box left it undersized.
-  const fontPx = Math.max(13, 26 * unit);
   const onCount = legend.filter((e) => isOn(e.kind)).length;
 
   // Collapsed: render only a compact pill that expands the legend on click, so
@@ -818,18 +813,25 @@ function LegendPanel({
                 display: 'flex',
                 alignItems: 'center',
                 gap: `${0.5 * fontPx}px`,
+                // Generous tap target: the row is always at least ~1.6em tall so
+                // it is comfortable to click/tap even after the SVG downscales.
+                minHeight: `${1.65 * fontPx}px`,
                 font: 'inherit',
                 textAlign: 'left',
                 cursor: 'pointer',
+                // ON rows carry a faint tint so the checked state reads even at a
+                // glance; hover lifts it further. OFF rows stay flat + struck out.
                 background: isHot
                   ? 'color-mix(in srgb, var(--color-surface-alt) 90%, transparent)'
-                  : 'transparent',
+                  : on
+                    ? 'color-mix(in srgb, var(--color-surface-alt) 45%, transparent)'
+                    : 'transparent',
                 border: `1px solid ${
                   isHot ? 'var(--color-border)' : 'transparent'
                 }`,
                 borderRadius: `${0.4 * fontPx}px`,
-                padding: `${0.2 * fontPx}px ${0.4 * fontPx}px`,
-                opacity: on ? 1 : 0.42,
+                padding: `${0.32 * fontPx}px ${0.45 * fontPx}px`,
+                opacity: on ? 1 : 0.45,
                 transition: 'opacity 0.2s ease, background 0.15s ease, border-color 0.15s ease',
               }}
             >
@@ -854,7 +856,11 @@ function LegendPanel({
                 style={{
                   flex: '1 1 auto',
                   whiteSpace: 'nowrap',
-                  textDecoration: on ? 'none' : 'line-through',
+                  // Use the longhand `textDecorationLine` (not the `textDecoration`
+                  // shorthand) so it never conflicts with `textDecorationColor`
+                  // across re-renders (React warns about mixing shorthand +
+                  // longhand for the same property).
+                  textDecorationLine: on ? 'none' : 'line-through',
                   textDecorationColor: 'var(--color-muted)',
                 }}
               >
@@ -878,16 +884,20 @@ function LegendPanel({
               title={soleActive ? 'Show all' : `Show only ${e.kind}`}
               style={{
                 flex: '0 0 auto',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 font: 'inherit',
-                fontSize: `${0.68 * fontPx}px`,
+                fontSize: `${0.72 * fontPx}px`,
                 cursor: 'pointer',
-                minWidth: `${1.4 * fontPx}px`,
+                minWidth: `${1.5 * fontPx}px`,
+                minHeight: `${1.5 * fontPx}px`,
                 textAlign: 'center',
                 color: soleActive ? 'var(--color-bg)' : 'var(--color-muted)',
                 background: soleActive ? e.color : 'color-mix(in srgb, var(--color-surface-alt) 80%, transparent)',
                 border: `1px solid ${soleActive ? e.color : 'var(--color-border)'}`,
                 borderRadius: `${0.35 * fontPx}px`,
-                padding: `${0.08 * fontPx}px ${0.3 * fontPx}px`,
+                padding: `${0.1 * fontPx}px ${0.3 * fontPx}px`,
                 transition: 'background 0.2s ease, color 0.2s ease',
               }}
             >

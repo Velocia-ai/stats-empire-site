@@ -85,16 +85,16 @@ function OpponentScoutingView({
                 {content.badge}
               </p>
 
-              <p className="mt-6 font-mono text-xs font-medium uppercase tracking-[0.22em] text-accent1">
+              <p className="mt-6 font-mono text-xs font-medium uppercase tracking-[0.22em] text-accent1 lg:text-sm">
                 {content.eyebrow}
               </p>
               <h2
                 id="opponent-scouting-heading"
-                className="mt-4 font-display text-[clamp(1.6rem,4.5vw,2.5rem)] font-bold leading-[1.05] text-text"
+                className="mt-4 font-display text-[clamp(1.6rem,4.3vw,3.25rem)] font-bold leading-[1.05] text-text"
               >
                 {content.headline}
               </h2>
-              <p className="mt-5 text-base leading-relaxed text-muted">
+              <p className="mt-5 text-base leading-relaxed text-muted lg:text-lg">
                 {content.subhead}
               </p>
 

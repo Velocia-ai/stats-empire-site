@@ -100,15 +100,15 @@ export default function BentoTile({
       style={prefersReduced ? undefined : { animationDelay: `${delay}s` }}
     >
       {(eyebrow || title || meta) && (
-        <header className="relative flex items-start justify-between gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
+        <header className="relative flex items-start justify-between gap-3 px-5 pt-5 sm:px-6 sm:pt-6 lg:px-7 lg:pt-7">
           <div className="min-w-0">
             {eyebrow ? (
-              <p className="font-mono text-[0.6rem] font-medium uppercase tracking-[0.22em] text-accent1 sm:text-[0.6875rem] lg:text-[0.8125rem]">
+              <p className="font-mono text-[0.65rem] font-medium uppercase tracking-[0.22em] text-accent1 sm:text-[0.75rem] lg:text-[0.875rem]">
                 {eyebrow}
               </p>
             ) : null}
             {title ? (
-              <h3 className="mt-1 truncate font-display text-base font-semibold tracking-tight text-text sm:text-xl lg:text-2xl">
+              <h3 className="mt-1.5 truncate font-display text-lg font-semibold tracking-tight text-text sm:text-2xl lg:text-[1.75rem] lg:leading-tight">
                 {title}
               </h3>
             ) : null}
@@ -120,7 +120,7 @@ export default function BentoTile({
       <div
         className={clsx(
           'relative flex min-h-0 flex-1 flex-col',
-          flushBody ? 'mt-4' : 'p-5 pt-3 sm:p-6 sm:pt-3',
+          flushBody ? 'mt-4' : 'p-5 pt-3 sm:p-6 sm:pt-3 lg:px-7 lg:pb-7',
         )}
       >
         {contentKey !== undefined ? (
