@@ -418,28 +418,28 @@ export default function ReportBento({
               }
               className="sm:col-span-2 lg:col-span-4 lg:row-span-2"
             >
-              {/* The field gets a generous floor so the paths stay big and
-                  legible, while a portrait-court width cap stops the tall field
-                  from eating the whole 2-row tile. That leaves clear vertical
-                  room in this tile for the bigger interactive legend the
-                  TrajectoryLines viz renders beneath the field, so nothing reads
-                  cramped or clipped. */}
-              <SpatialStack
-                pitch={pitch}
-                minHeight={360}
-                // Cap portrait courts (tennis) so the tall field leaves room
-                // below it for the bigger legend; wide pitches already fit.
-                maxWidth={pitch === 'tennis-court' ? '15rem' : undefined}
-              >
-                <TrajectoryLines
-                  paths={data.trajectories}
-                  pitch={pitch}
-                  animate={!prefersReduced}
-                  legendPlacement="bottom-right"
-                  legendCollapsible
-                  className="absolute inset-0"
-                />
-              </SpatialStack>
+              {/* TrajectoryLines owns BOTH the field and the legend here via its
+                  opt-in `legendBelow` mode: it renders the PitchBackground +
+                  drawn paths in a field box, then the interactive legend as a
+                  real-HTML sibling STRICTLY BELOW the field, so the legend can
+                  never overlap the plays (the previous docked-in-SVG legend
+                  covered the lower court). A vertical flex column centres the
+                  field+legend group, and a portrait-court width cap keeps the
+                  tall court from eating the whole 2-row tile while the freed
+                  space below carries the now-larger, fully-legible legend. */}
+              <div className="flex min-h-0 flex-1 flex-col justify-center">
+                <div
+                  className="mx-auto w-full"
+                  style={{ maxWidth: pitch === 'tennis-court' ? '17rem' : '24rem' }}
+                >
+                  <TrajectoryLines
+                    paths={data.trajectories}
+                    pitch={pitch}
+                    animate={!prefersReduced}
+                    legendBelow
+                  />
+                </div>
+              </div>
             </BentoTile>
 
             {/* MOMENTUM / trend tile (Recharts), spans 2/6 cols x 2 rows so it

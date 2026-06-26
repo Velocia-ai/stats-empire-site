@@ -37,6 +37,7 @@ import { line, curveCatmullRom } from 'd3-shape';
 import { motion, useInView, useReducedMotion } from 'framer-motion';
 import type { Outcome, PitchType, TrajectoryPath } from '@/lib/types';
 import { makeProjector, projectPoints, viewBoxAttr } from './geometry';
+import PitchBackground from './PitchBackground';
 
 /** Which corner the interactive legend docks to, so it never covers the plays. */
 export type LegendPlacement = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
@@ -59,7 +60,23 @@ export interface TrajectoryLinesProps {
    * obscures the field) and expanded on demand. Default false (always expanded).
    */
   legendCollapsible?: boolean;
-  /** Optional extra classes for the <svg>. */
+  /**
+   * OPT-IN report layout. When true the component returns a normal-flow wrapper
+   * that renders the field (its own PitchBackground underlay + the trajectory
+   * <svg> overlay) and, as a SIBLING strictly BELOW the field, the interactive
+   * legend as real HTML. This guarantees the legend never overlaps the plays
+   * (it lives in document flow under the field, not docked inside the SVG) while
+   * staying at real DOM px so it is comfortably readable and fully keyboard /
+   * screen-reader accessible.
+   *
+   * Default false: the component returns a BARE <svg> exactly as before, so the
+   * existing `absolute inset-0` consumers (Hero, FreeTrialDashboard) that layer
+   * the svg over their own PitchBackground keep rendering pixel-identically.
+   * When this is set, `legendPlacement` / `legendCollapsible` are ignored (the
+   * legend is always below the field and always expanded).
+   */
+  legendBelow?: boolean;
+  /** Optional extra classes for the <svg> (default mode) or wrapper (legendBelow). */
   className?: string;
 }
 
@@ -150,6 +167,7 @@ export default function TrajectoryLines({
   animate = false,
   legendPlacement = 'top-left',
   legendCollapsible = false,
+  legendBelow = false,
   className,
 }: TrajectoryLinesProps) {
   const proj = useMemo(() => makeProjector(pitch), [pitch]);
@@ -313,15 +331,30 @@ export default function TrajectoryLines({
   const legendFont = Math.max(28, vw * 0.034);
   const foPad = legendFont * 0.5;
 
-  return (
+  // The field <svg>. In the default mode this IS the component's return value
+  // (a bare svg) so `absolute inset-0` consumers are untouched. In legendBelow
+  // mode the in-SVG foreignObject legend is suppressed and this same svg is
+  // composed into a wrapper with the legend rendered as a real-HTML sibling
+  // strictly below it (see the return below).
+  const fieldSvg = (
     <svg
       ref={ref}
       viewBox={viewBoxAttr(pitch)}
-      className={className}
+      // In legendBelow mode the svg is the field overlay inside a relative box,
+      // so it stretches to fill that box; otherwise it keeps the caller's class.
+      className={legendBelow ? 'absolute inset-0 h-full w-full' : className}
       preserveAspectRatio="xMidYMid meet"
       role="img"
       aria-label={ariaLabel}
-      style={{ width: '100%', height: 'auto', display: 'block' }}
+      style={
+        legendBelow
+          ? // Absolute overlay filling the relative field box (PitchBackground
+            // sets the box height); preserveAspectRatio keeps it aligned to the
+            // underlay.
+            { position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }
+          : // Default: responsive bare svg, byte-identical to before.
+            { width: '100%', height: 'auto', display: 'block' }
+      }
     >
       <defs>
         {/* Coloured glow so a stroke lifts off the pitch like a broadcast graphic.
@@ -527,8 +560,12 @@ export default function TrajectoryLines({
           spans the full field; an inner flex wrapper docks the compact panel
           into the chosen CORNER so it never covers the drawn plays. The wrapper
           itself ignores pointer events (only the panel re-enables them), so the
-          empty field area stays fully hoverable. */}
-      {legend.length > 0 && (
+          empty field area stays fully hoverable.
+
+          SUPPRESSED in legendBelow mode: there the legend is rendered as a real-
+          HTML sibling strictly below the field (see the wrapper return), so it
+          must NOT also appear docked inside the field svg. */}
+      {!legendBelow && legend.length > 0 && (
         <foreignObject
           x={foPad}
           y={foPad}
@@ -565,6 +602,47 @@ export default function TrajectoryLines({
         </foreignObject>
       )}
     </svg>
+  );
+
+  // DEFAULT MODE: bare <svg>, byte-for-byte the previous behaviour. The
+  // `absolute inset-0` consumers (Hero, FreeTrialDashboard) layer this over
+  // their own PitchBackground, so this path must stay exactly as it was.
+  if (!legendBelow) return fieldSvg;
+
+  // LEGENDBELOW MODE (opt-in, report tile): return a normal-flow wrapper. The
+  // field (its own PitchBackground underlay + the trajectory svg overlay) sits
+  // in a relative box; the interactive legend renders as a real-HTML sibling
+  // STRICTLY BELOW that box, so it can never vertically overlap the plays. The
+  // legend is real DOM at real px (>=14) so it stays comfortably readable and
+  // keyboard / screen-reader accessible, and it shares the same selection +
+  // hover state as the lines, so toggling still dims the WHOLE play as one unit.
+  return (
+    <div className={className} style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+      {/* Field box: PitchBackground sizes the height via its own viewBox aspect;
+          the trajectory svg overlays it on the SAME viewBox so they align pixel-
+          for-pixel, exactly like the stacked consumers do. */}
+      <div className="relative w-full">
+        <PitchBackground pitch={pitch} className="block w-full" />
+        {fieldSvg}
+      </div>
+      {/* Interactive legend, BELOW the field. Real DOM px (not viewBox units) so
+          readability never depends on how far the field downscales. */}
+      {legend.length > 0 && (
+        <div className="mt-3 flex w-full justify-center">
+          <LegendPanel
+            legend={legend}
+            isOn={isOn}
+            allOn={allOn}
+            hovered={hovered}
+            onToggle={toggle}
+            onIsolate={isolate}
+            onReset={resetAll}
+            onHover={setHovered}
+            fontPx={15}
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
