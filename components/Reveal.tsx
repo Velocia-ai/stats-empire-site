@@ -18,6 +18,7 @@
 
 import { motion, useInView, useReducedMotion } from 'framer-motion';
 import {
+  useMemo,
   useRef,
   type ComponentPropsWithoutRef,
   type ElementType,
@@ -74,7 +75,13 @@ export function Reveal({
   // Fire a touch before the element is fully on-screen, once only.
   const inView = useInView(ref, { once: true, margin: '0px 0px -12% 0px' });
 
-  const MotionTag = motion(as as ElementType);
+  // Build the motion component ONCE per `as` value. Calling motion() during
+  // render returns a brand-new component TYPE every render, so React unmounts +
+  // remounts the element on every parent re-render, resetting the once-latch and
+  // REPLAYING the entrance animation. On the hero (which re-renders every ~4.2s
+  // as the tactics board auto-rotates) that made the whole section look like it
+  // was "reloading" while scrolling. Memoizing keeps the type stable.
+  const MotionTag = useMemo(() => motion(as as ElementType), [as]);
 
   // Reduced motion (and pre-hydration default): render settled, no animation.
   // Passthrough DOM props (role, aria-*, etc.) are forwarded to the element.
