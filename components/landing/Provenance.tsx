@@ -271,34 +271,9 @@ function ProvenanceCalloutContent({
   );
 }
 
-// Desktop-only overlay: a marked node on the connector at the 2|3 seam (40%
-// across the lg row), with the accented panel hanging beneath it. Hidden below
-// lg, where the inline panel takes over.
-function ProvenanceCalloutDesktop({
-  callout,
-}: {
-  callout: NonNullable<ProvenanceContent['callout']>;
-}) {
-  return (
-    <Reveal
-      // Pinned to the connector: left-[40%] is the boundary between node 2
-      // (column 2) and node 3 (column 3) on the 5-up row; top-10 matches the
-      // connector's vertical position so the marker sits exactly on the line.
-      className="pointer-events-none absolute left-[40%] top-10 z-20 hidden lg:block"
-    >
-      <div className="-translate-x-1/2">
-        {/* The marked node, centered on the connector line. */}
-        <span className="mx-auto flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-accent1/50 bg-bg shadow-[0_0_0_4px_var(--color-bg),0_0_22px_-6px_var(--color-accent1)]">
-          <span className="h-2 w-2 rounded-full bg-accent1" aria-hidden="true" />
-        </span>
-        {/* The panel hangs below the marked node. */}
-        <div className="pointer-events-auto mt-3 w-[22rem] max-w-[22rem] rounded-2xl border border-accent1/30 bg-accent1/[0.05] p-5 shadow-[0_18px_40px_-24px_var(--color-accent1)]">
-          <ProvenanceCalloutContent callout={callout} />
-        </div>
-      </div>
-    </Reveal>
-  );
-}
+// (The desktop fusion callout is rendered as a clean panel BELOW the step chain
+// in the Provenance body. An earlier version overlaid it on the connector and
+// overlapped the step 2 / 3 text, so the overlay was removed.)
 
 export default function Provenance({
   content = PROVENANCE,
@@ -338,14 +313,8 @@ export default function Provenance({
           numbered nodes. On tablet (md, two-up grid) neither orientation
           applies, so the connector renders nothing and the cards stand alone.
         */}
-        {/*
-          On lg the fusion panel hangs below the connector as an overlay, so the
-          row reserves bottom clearance (pb) for it. Below lg the panel sits in
-          the flow and needs no reserved space.
-        */}
-        <div className="relative lg:pb-72">
+        <div className="relative">
           <ProvenanceConnector />
-          {callout ? <ProvenanceCalloutDesktop callout={callout} /> : null}
           <ol className="relative grid grid-cols-1 gap-x-6 gap-y-10 sm:gap-x-8 md:grid-cols-2 lg:grid-cols-5 lg:gap-x-5">
             {content.steps.map((step, idx) => {
             const meta = OWNER_META[step.owner];
@@ -425,6 +394,20 @@ export default function Provenance({
               );
             })}
           </ol>
+
+          {/*
+            Desktop fusion callout: a clean accented highlight rendered BELOW the
+            5-step chain. The previous version overlaid this panel on the
+            connector and overlapped the step 2 and 3 text. Mobile and tablet
+            keep the inline panel between steps 2 and 3 (above); lg shows this one.
+          */}
+          {callout ? (
+            <Reveal className="mx-auto mt-14 hidden max-w-2xl lg:block">
+              <div className="rounded-2xl border border-accent1/30 bg-accent1/[0.05] p-6 shadow-[0_18px_40px_-26px_var(--color-accent1)]">
+                <ProvenanceCalloutContent callout={callout} />
+              </div>
+            </Reveal>
+          ) : null}
         </div>
       </div>
     </section>
