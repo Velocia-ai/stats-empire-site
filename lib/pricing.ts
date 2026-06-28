@@ -146,8 +146,8 @@ export const LEAGUE_OFFERING: LeagueOffering = {
 // --- Delivery, rollover, add-ons, value statement ----------------------------
 
 export const DELIVERY: Delivery = {
-  standard: 'Express delivery in 12h to 24h, included with every token.',
-  express: 'Human-led, AI-assisted logging, turned around in 12h to 24h.',
+  standard: 'Express delivery in 12 to 24 hours, included with every token.',
+  express: 'Human-led, AI-assisted logging, turned around in 12 to 24 hours.',
 };
 
 export const ROLLOVER: string =

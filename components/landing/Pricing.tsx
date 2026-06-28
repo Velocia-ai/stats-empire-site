@@ -125,7 +125,7 @@ function PricingView({
 
         {/* ---- Delivery / rollover / add-ons / anchor ------------------- */}
         <ul className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-4">
-          <FactCard icon={Clock} title="Express 12h to 24h" body={DELIVERY.standard} />
+          <FactCard icon={Clock} title="Express 12-24h" body={DELIVERY.standard} />
           <FactCard icon={Zap} title="Human-led, AI-assisted" body={DELIVERY.express} />
           <FactCard icon={RefreshCw} title="Tokens roll over" body={ROLLOVER} />
           <FactCard

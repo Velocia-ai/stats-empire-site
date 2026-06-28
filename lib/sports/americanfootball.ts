@@ -212,7 +212,7 @@ const freeGame: FreeGame = {
   matchup: 'Northern Sentinels vs. Coastal Mariners',
   date: '2026-05-03',
   headline:
-    '327 passing yards on 26 of 35, 3 total touchdowns and a 118.4 passer rating, a quarterback masterclass that converted on 52% of third downs and answered every drive.',
+    '327 passing yards on 26 of 35, 3 total touchdowns and a 118.4 passer rating, a quarterback masterclass that converted on 52.4% of third downs and answered every drive.',
   summaryMetrics: [
     { label: 'Pass yds', value: 327, unit: 'yds' },
     { label: 'Comp/Att', value: '26/35' },

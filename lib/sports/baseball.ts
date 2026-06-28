@@ -217,7 +217,7 @@ const freeGame: FreeGame = {
     { label: 'Home Runs', value: 2 },
     { label: 'RBI', value: 5 },
     { label: 'Max Exit Velo', value: 110.1, unit: 'mph' },
-    { label: 'Avg Launch Angle', value: 18.4, unit: '°' },
+    { label: 'Avg Launch Angle', value: 14.2, unit: '°' },
     { label: 'WPA', value: '+0.61' },
   ],
 };

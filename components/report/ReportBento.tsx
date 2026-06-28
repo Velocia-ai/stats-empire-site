@@ -28,7 +28,10 @@ import {
 } from '@/components/viz';
 import { MetricTable } from '@/components/viz/MetricTable';
 import { StatTiles } from '@/components/viz/StatTiles';
-import { TrendChart } from '@/components/viz/TrendChart';
+// Recharts is heavy (~606KB raw / ~157KB brotli). Import the chart through its
+// code-split wrapper so the Recharts/d3 chunk is fetched ONLY on this route, not
+// pulled into the shared bundle that the chart-free Home and Pricing pages load.
+import { TrendChart } from '@/components/viz/LazyTrendChart';
 import Reveal from '@/components/Reveal';
 
 import BentoTile from './BentoTile';

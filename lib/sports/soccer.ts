@@ -213,7 +213,7 @@ const freeGame: FreeGame = {
   id: 'sc-2026-05-24',
   sport: 'soccer',
   title: 'Matchday 34, Complete Performance',
-  matchup: 'Athletic Rovers 3, 1 Calle Union',
+  matchup: 'Athletic Rovers 3, Calle Union 1',
   date: '2026-05-24',
   headline:
     '2 goals and an assist from a 0.71 xG night, 89.4% pass accuracy, 4 key passes and 9 progressive carries driving the build-up.',

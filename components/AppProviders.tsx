@@ -26,14 +26,13 @@ export default function AppProviders({ children }: { children: React.ReactNode }
   return (
     <FreemiumFlowProvider
       onBuyTokens={() => {
-        // Demo stub, point at a real token-purchase route in production.
-        // eslint-disable-next-line no-console
-        console.log('Buy tokens clicked');
+        // No-op demo stub. Point at a real token-purchase route in production.
+        // Intentionally does NOT log: nothing should ship to the prod console.
       }}
-      onRegister={(creds) => {
-        // Demo stub, wire to your signup endpoint / analytics.
-        // eslint-disable-next-line no-console
-        console.log('Registered:', creds);
+      onRegister={() => {
+        // No-op demo stub. Wire to your signup endpoint / analytics in
+        // production. Intentionally does NOT log: the credentials passed here
+        // are user-entered registration data and must never reach the console.
       }}
     >
       {/* Fixed top nav, shown on every route (Start Free CTA + ThemeSwitcher). */}

@@ -7,7 +7,8 @@
 // flags moments); trained human analysts log, correct, control and audit, and
 // have the final say. Lead with "human-led, AI-assisted" / "AI speed, human
 // judgment". Never knock Western pricing; frame value positively against opaque,
-// seat-based enterprise contracts. Express turnaround is 12h to 24h.
+// seat-based enterprise contracts. Express turnaround is 12 to 24 hours
+// (compact form "12-24h" only where space is tight, e.g. proof-stat values).
 
 // --- Types -------------------------------------------------------------------
 
@@ -416,7 +417,7 @@ export const OPPONENT_SCOUTING: OpponentScouting = {
 
 export const BILINGUAL_REPORTS: BilingualReports = {
   eyebrow: 'Built for international squads',
-  headline: 'Every report, in English and 中文.',
+  headline: 'Every report, in English and Simplified Chinese.',
   subhead:
     'Reports are delivered in both English and Simplified Chinese, so coaches, analysts and athletes read the same insight in their own language with nothing lost in translation.',
   badge: 'EN + 中文 delivery',
@@ -511,7 +512,7 @@ export const FAQ: Faq = {
     {
       question: 'How fast do I get my report?',
       answer:
-        'Standard delivery is included with every token. If you need it sooner, Express turnaround of 12 to 24 hours is available for +1 token per match.',
+        'Fast by default. Every token includes express turnaround of 12 to 24 hours, no extra charge, with priority slots when you need it even sooner.',
     },
     {
       question: 'What footage do you need from me?',

@@ -79,13 +79,16 @@ export default function SiteFooter({ className }: SiteFooterProps) {
                 </a>
               </li>
               <li>
-                <a
-                  href={`https://${FOOTER.domain}`}
+                {/* Domain has no live DNS yet, so the wordmark/domain routes home
+                    instead of to a dead external host. Swap to the real URL once
+                    the domain resolves. */}
+                <Link
+                  href="/"
                   className="inline-flex items-center gap-2 font-mono text-xs text-muted transition-colors hover:text-accent1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent1"
                 >
                   <Globe className="h-3.5 w-3.5" aria-hidden />
                   {FOOTER.domain}
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

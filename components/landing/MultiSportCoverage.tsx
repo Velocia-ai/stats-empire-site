@@ -144,8 +144,9 @@ function FeaturedCard({ meta }: { meta: SportMeta }) {
 
   return (
     <a
+      id={meta.key}
       href={`#${meta.key}`}
-      className="block h-full rounded-2xl border border-border bg-surface/60 p-5 transition-colors hover:border-accent1/40"
+      className="block h-full scroll-mt-24 rounded-2xl border border-border bg-surface/60 p-5 transition-colors hover:border-accent1/40"
     >
       {/* Pitch (the data viz) with its floating signature metric */}
       <div className="relative overflow-hidden rounded-xl border border-border/70 bg-bg/40">
@@ -194,8 +195,9 @@ function SecondaryTile({ meta }: { meta: SportMeta }) {
 
   return (
     <a
+      id={meta.key}
       href={`#${meta.key}`}
-      className="group flex items-center gap-4 rounded-xl border border-border bg-surface/40 p-4 transition-colors hover:border-accent1/30"
+      className="group flex scroll-mt-24 items-center gap-4 rounded-xl border border-border bg-surface/40 p-4 transition-colors hover:border-accent1/30"
     >
       {/* Mini pitch thumbnail */}
       <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border/70 bg-bg/40">

@@ -27,7 +27,10 @@ import {
 } from '@/components/viz';
 import { MetricTable } from '@/components/viz/MetricTable';
 import { StatTiles } from '@/components/viz/StatTiles';
-import { TrendChart } from '@/components/viz/TrendChart';
+// Recharts is heavy and ships globally via this dashboard (the freemium funnel
+// mounts on every route), so load the chart through its code-split wrapper to
+// keep the Recharts/d3 chunk out of the shared bundle (off Home and Pricing).
+import { TrendChart } from '@/components/viz/LazyTrendChart';
 import { getSportData } from '@/lib/sports';
 import type { SportData, SportKey } from '@/lib/types';
 

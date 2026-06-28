@@ -17,10 +17,42 @@ import { ReportBento } from '@/components/report';
 import { WhatsInReport } from '@/components/landing';
 import { FreeSampleCta, ProductHero, TeamStatsExplorer } from '@/components/product';
 
-export const metadata = {
-  title: 'Product, Stats Empire',
-  description:
-    'See the coach-ready report: spatial maps, headline stats, an advanced metric table and a momentum trend, then try a real match free.',
+import type { Metadata } from 'next';
+
+const PRODUCT_DESCRIPTION =
+  'See the coach-ready match report: spatial maps, headline stats, an advanced metric table and a momentum trend, then try a real match free.';
+
+// Title is run through the root template (-> "... | Stats Empire"), so the base
+// stays keyword-led and short. openGraph/twitter inherit the root defaults and
+// override only title, description and the per-route URL/canonical.
+export const metadata: Metadata = {
+  title: 'Product: Coach-Ready Match Reports',
+  description: PRODUCT_DESCRIPTION,
+  alternates: {
+    canonical: '/product',
+  },
+  openGraph: {
+    title: 'Product: Coach-Ready Match Reports | Stats Empire',
+    description: PRODUCT_DESCRIPTION,
+    url: '/product',
+    // Per-route openGraph replaces (does not merge) the root block, so the
+    // shared og.png must be repeated here or the page would ship no OG image.
+    images: [
+      {
+        url: '/og.png',
+        width: 1200,
+        height: 630,
+        type: 'image/png',
+        alt: 'Stats Empire, human-led multi-sport match intelligence',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Product: Coach-Ready Match Reports | Stats Empire',
+    description: PRODUCT_DESCRIPTION,
+    images: ['/og.png'],
+  },
 };
 
 export default function ProductPage() {

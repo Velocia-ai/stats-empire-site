@@ -13,12 +13,45 @@
 // story + value live on the home page (/); the product showcase lives on
 // /product.
 
-import { BilingualStrip, Faq, Pricing } from '@/components/landing';
+import type { Metadata } from 'next';
 
-export const metadata = {
-  title: 'Pricing, Stats Empire',
-  description:
-    'Simple token packs , one token covers one match , plus Leagues & Federations plans. Pay only for the matches you analyze.',
+import { BilingualStrip, Faq, Pricing } from '@/components/landing';
+import { serviceJsonLd } from '@/lib/jsonld';
+
+const PRICING_DESCRIPTION =
+  'Simple token packs, one token covers one match, plus Leagues and Federations plans. Pay only for the matches you analyze, from $49 down to $29 per match.';
+
+// Title runs through the root template (-> "... | Stats Empire"). openGraph and
+// twitter inherit root defaults, overriding only title/description/URL. The
+// stray spaces before commas in the old description are removed here.
+export const metadata: Metadata = {
+  title: 'Pricing: Pay-Per-Match Token Packs',
+  description: PRICING_DESCRIPTION,
+  alternates: {
+    canonical: '/pricing',
+  },
+  openGraph: {
+    title: 'Pricing: Pay-Per-Match Token Packs | Stats Empire',
+    description: PRICING_DESCRIPTION,
+    url: '/pricing',
+    // Per-route openGraph replaces (does not merge) the root block, so the
+    // shared og.png must be repeated here or the page would ship no OG image.
+    images: [
+      {
+        url: '/og.png',
+        width: 1200,
+        height: 630,
+        type: 'image/png',
+        alt: 'Stats Empire, human-led multi-sport match intelligence',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Pricing: Pay-Per-Match Token Packs | Stats Empire',
+    description: PRICING_DESCRIPTION,
+    images: ['/og.png'],
+  },
 };
 
 function PricingHero() {
@@ -58,6 +91,13 @@ function PricingHero() {
 export default function PricingPage() {
   return (
     <main className="relative overflow-x-hidden">
+      {/* Service + token-pack Offer structured data, built from lib/pricing.ts so
+          it cannot drift from the rendered pricing table. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceJsonLd()) }}
+      />
+
       {/* Short pricing intro. */}
       <PricingHero />
 
