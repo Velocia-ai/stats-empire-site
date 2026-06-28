@@ -15,7 +15,7 @@
 
 import { ReportBento } from '@/components/report';
 import { WhatsInReport } from '@/components/landing';
-import { FreeSampleCta, ProductHero } from '@/components/product';
+import { FreeSampleCta, ProductHero, TeamStatsExplorer } from '@/components/product';
 
 export const metadata = {
   title: 'Product, Stats Empire',
@@ -37,6 +37,12 @@ export default function ProductPage() {
         <ReportBento defaultSport="tennis" className="pb-0" />
         <WhatsInReport className="pt-0" />
       </div>
+
+      {/* Coach-facing individual + team stats explorer (#stats-explorer): the
+          full demo squad across three timeframe windows, a sortable roster
+          table and a clip-by-clip video + AI provenance note. Sits after the
+          report pillars, before the closing CTA. */}
+      <TeamStatsExplorer />
 
       {/* Closing free-sample CTA (#free-game), opens the freemium funnel. */}
       <FreeSampleCta />

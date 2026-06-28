@@ -32,10 +32,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, FileText, Zap } from 'lucide-react';
 
-import { HERO, PROOF_STATS } from '@/lib/content';
+import { HERO } from '@/lib/content';
 import { FEATURED_SPORTS, SPORTS, getSportData } from '@/lib/sports';
 import type { SportKey } from '@/lib/types';
-import { PitchBackground, TrajectoryLines } from '@/components/viz';
+import { PitchBackground, TrajectoryLines, trajectoryLegend } from '@/components/viz';
 import { useFreemiumTrigger } from '@/components/freemium';
 import Reveal from '@/components/Reveal';
 import CourtBackdrop from './CourtBackdrop';
@@ -105,6 +105,12 @@ function HeroView({
   }, [pinned, reduce, featured, rotateMs]);
 
   const data = useMemo(() => getSportData(active), [active]);
+  // Compact legend for the board, derived with the SAME kind→colour mapping the
+  // drawn lines use (via trajectoryLegend), so the off-field swatches match the
+  // on-pitch line colours exactly. The board sets `hideLegend` so the in-SVG
+  // overlay legend never covers the pitch; this strip renders BELOW the field
+  // instead. Cap the entries so the strip stays tidy on the smallest card width.
+  const legend = useMemo(() => trajectoryLegend(data.trajectories), [data.trajectories]);
 
   return (
     <section
@@ -196,31 +202,10 @@ function HeroView({
               })}
             </div>
           </Reveal>
-
-          {/* Proof stat strip: compact high-contrast chips so the trust
-              figures stay legible over the animated court background instead of
-              washing out. Each chip leads with its kicker, then the big value. */}
-          <Reveal
-            as="dl"
-            index={6}
-            className="mt-3 grid w-full grid-cols-2 gap-2.5 sm:grid-cols-4 lg:max-w-2xl"
-          >
-            {PROOF_STATS.map((s) => (
-              <div
-                key={s.label}
-                className="flex flex-col gap-1 rounded-xl border border-border bg-surface/70 px-4 py-3.5 backdrop-blur-sm"
-              >
-                {s.kicker ? (
-                  <span className="font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-muted">
-                    {s.kicker}
-                  </span>
-                ) : null}
-                <dt className="font-display text-2xl font-extrabold leading-none tracking-tight text-text sm:text-[1.7rem]">
-                  {s.value}
-                </dt>
-              </div>
-            ))}
-          </Reveal>
+          {/* NOTE: the compact inline proof-stat strip that previously sat here
+              ("LOGGED BY PEOPLE / SIGNED OFF / TURNAROUND / COVERAGE") was removed
+              because the same figures are shown as full cards in the standalone
+              ProofStats section lower on the page; keeping both duplicated them. */}
         </div>
 
         {/* ---- Visual column: rotating tactics card ----------------------- */}
@@ -267,12 +252,51 @@ function HeroView({
                         paths={data.trajectories}
                         pitch={data.pitch}
                         animate
+                        // Decorative auto-rotating board: suppress the in-SVG
+                        // overlay legend so the trajectories + arrows are never
+                        // covered. A compact legend renders BELOW the pitch (see
+                        // the swatch strip after this stack), so the legend stays
+                        // strictly off the field for every rotated sport.
+                        hideLegend
                         className="max-h-full"
                       />
                     </div>
                   </motion.div>
                 </AnimatePresence>
               </div>
+
+              {/* Compact PLAYS legend, BELOW the pitch (never over it). The board
+                  suppresses TrajectoryLines' in-SVG overlay legend via
+                  `hideLegend`, so the trajectories + arrows stay fully visible;
+                  this read-only swatch strip carries the kind→colour key instead.
+                  It sits in normal flow under the field box, so the field's bottom
+                  is always <= this strip's top: no overlap for any rotated sport
+                  (tennis, soccer, basketball). It re-keys on the active sport so
+                  the swatches cross-fade in step with the morphing board, wraps to
+                  multiple rows on the narrow card, and is decorative (aria-hidden)
+                  since the board itself is illustrative. */}
+              {legend.length > 0 ? (
+                <motion.ul
+                  key={`legend-${active}`}
+                  aria-hidden
+                  initial={reduce ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: reduce ? 0 : 0.4, ease: 'linear' }}
+                  className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5"
+                >
+                  {legend.map((e) => (
+                    <li key={e.key} className="inline-flex items-center gap-1.5">
+                      <span
+                        className="inline-block h-2 w-2 shrink-0 rounded-[2px]"
+                        style={{ backgroundColor: e.color }}
+                      />
+                      <span className="font-mono text-[0.6rem] uppercase tracking-[0.14em] text-muted">
+                        {e.kind}
+                      </span>
+                    </li>
+                  ))}
+                </motion.ul>
+              ) : null}
 
               {/* Rotation dots, also reflect/control the active sport. */}
               <div className="mt-4 flex items-center justify-center gap-2">

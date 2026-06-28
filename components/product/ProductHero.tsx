@@ -55,10 +55,11 @@ export default function ProductHero({ className }: ProductHeroProps) {
         </h1>
 
         <p className="mt-5 max-w-2xl font-body text-base leading-relaxed text-muted sm:text-lg lg:text-[1.4375rem]">
-          One premium, coach-ready surface per match: spatial maps, headline
-          stats, an advanced metric table and a momentum trend, all logged by a
-          human and signed off by a senior analyst. Toggle the sport below to
-          see it morph, then try a real game free.
+          See the match the way a stat sheet never shows it: spatial maps,
+          headline stats, a deep metric table, the momentum swing, and a video
+          breakdown clip by clip, with an extra layer of AI analysis on top of
+          the human log and a senior sign-off. Toggle the sport below to watch
+          it morph, then try a real game free.
         </p>
 
         <ProvenanceBadge className="mt-6 backdrop-blur" />

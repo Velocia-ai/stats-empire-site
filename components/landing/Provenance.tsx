@@ -33,10 +33,11 @@ import {
   ShieldCheck,
   BadgeCheck,
   PackageCheck,
+  Sparkles,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { motion, useInView, useReducedMotion } from 'framer-motion';
-import { useRef } from 'react';
+import { Fragment, useRef } from 'react';
 import clsx from 'clsx';
 import { PROVENANCE } from '@/lib/content';
 import type {
@@ -212,10 +213,98 @@ function ProvenanceConnector() {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Human + AI fusion callout.
+//
+// The single intentional highlight on the chain, marking the moment people do
+// the work (and keep the final say) while specialized AI sharpens quality
+// control in parallel. It sits between stage 2 (a human logs the match) and
+// stage 3 (AI sharpens), the exact seam where the human and the machine run
+// alongside each other.
+//
+// The inner content is shared across breakpoints; the wrappers differ so the
+// callout never disturbs the 5-up grid or its connector:
+//   - lg+: an absolutely-positioned panel hung off a marked node pinned to the
+//     connector at the 2|3 boundary (40% across the row). Because it is an
+//     overlay, the grid still lays out exactly five columns and the connector
+//     line stays continuous behind it.
+//   - below lg: a full-width panel inserted into the document flow between the
+//     two steps, so the stacked / two-up layouts read it inline.
+//
+// Reduced-motion safe: all entrance is delegated to <Reveal>, which renders the
+// settled state with no animation when reduced motion is requested.
+// ---------------------------------------------------------------------------
+
+function ProvenanceCalloutContent({
+  callout,
+}: {
+  callout: NonNullable<ProvenanceContent['callout']>;
+}) {
+  return (
+    <div className="flex items-start gap-3.5">
+      {/*
+        Paired human + AI glyph: the human analyst (UserCheck) and the machine
+        assist (Sparkles) sharing one badge, the fusion the copy describes.
+      */}
+      <span
+        aria-hidden="true"
+        className="relative flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-accent1/45 bg-accent1/[0.1]"
+      >
+        <UserCheck className="h-5 w-5 text-accent1" strokeWidth={1.75} />
+        <span className="absolute -bottom-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-md border border-accent1/45 bg-bg">
+          <Sparkles className="h-3 w-3 text-accent1" strokeWidth={2} />
+        </span>
+      </span>
+
+      <div className="min-w-0">
+        <p className="font-mono text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-accent1">
+          Human + AI, in parallel
+        </p>
+        <h3 className="mt-1.5 font-display text-base font-bold leading-snug text-text">
+          {callout.calloutTitle}
+        </h3>
+        <p className="mt-2 text-sm leading-relaxed text-muted">
+          {callout.calloutBody}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Desktop-only overlay: a marked node on the connector at the 2|3 seam (40%
+// across the lg row), with the accented panel hanging beneath it. Hidden below
+// lg, where the inline panel takes over.
+function ProvenanceCalloutDesktop({
+  callout,
+}: {
+  callout: NonNullable<ProvenanceContent['callout']>;
+}) {
+  return (
+    <Reveal
+      // Pinned to the connector: left-[40%] is the boundary between node 2
+      // (column 2) and node 3 (column 3) on the 5-up row; top-10 matches the
+      // connector's vertical position so the marker sits exactly on the line.
+      className="pointer-events-none absolute left-[40%] top-10 z-20 hidden lg:block"
+    >
+      <div className="-translate-x-1/2">
+        {/* The marked node, centered on the connector line. */}
+        <span className="mx-auto flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-accent1/50 bg-bg shadow-[0_0_0_4px_var(--color-bg),0_0_22px_-6px_var(--color-accent1)]">
+          <span className="h-2 w-2 rounded-full bg-accent1" aria-hidden="true" />
+        </span>
+        {/* The panel hangs below the marked node. */}
+        <div className="pointer-events-auto mt-3 w-[22rem] max-w-[22rem] rounded-2xl border border-accent1/30 bg-accent1/[0.05] p-5 shadow-[0_18px_40px_-24px_var(--color-accent1)]">
+          <ProvenanceCalloutContent callout={callout} />
+        </div>
+      </div>
+    </Reveal>
+  );
+}
+
 export default function Provenance({
   content = PROVENANCE,
   className,
 }: ProvenanceProps) {
+  const { callout } = content;
   return (
     <section
       id="provenance"
@@ -249,8 +338,14 @@ export default function Provenance({
           numbered nodes. On tablet (md, two-up grid) neither orientation
           applies, so the connector renders nothing and the cards stand alone.
         */}
-        <div className="relative">
+        {/*
+          On lg the fusion panel hangs below the connector as an overlay, so the
+          row reserves bottom clearance (pb) for it. Below lg the panel sits in
+          the flow and needs no reserved space.
+        */}
+        <div className="relative lg:pb-72">
           <ProvenanceConnector />
+          {callout ? <ProvenanceCalloutDesktop callout={callout} /> : null}
           <ol className="relative grid grid-cols-1 gap-x-6 gap-y-10 sm:gap-x-8 md:grid-cols-2 lg:grid-cols-5 lg:gap-x-5">
             {content.steps.map((step, idx) => {
             const meta = OWNER_META[step.owner];
@@ -260,9 +355,9 @@ export default function Provenance({
             // never enters the marketing chrome.
             const warm = meta.tone === 'warm';
             return (
+              <Fragment key={step.stage}>
               <Reveal
                 as="li"
-                key={step.stage}
                 index={idx}
                 className="relative flex items-start gap-4 md:flex-col md:items-start md:gap-5"
               >
@@ -307,6 +402,26 @@ export default function Provenance({
                   </p>
                 </div>
               </Reveal>
+
+              {/*
+                Inline fusion panel for stacked (mobile) and two-up (md) layouts.
+                Inserted right after stage 2 so it reads between "a human logs"
+                and "AI sharpens". It spans the full grid width and is hidden on
+                lg, where the overlay panel takes over, so the 5-up row and its
+                connector stay intact.
+              */}
+              {callout && idx === 1 ? (
+                <Reveal
+                  as="li"
+                  index={idx}
+                  className="relative z-10 md:col-span-2 lg:hidden"
+                >
+                  <div className="rounded-2xl border border-accent1/30 bg-accent1/[0.05] p-5 shadow-[0_18px_40px_-26px_var(--color-accent1)]">
+                    <ProvenanceCalloutContent callout={callout} />
+                  </div>
+                </Reveal>
+              ) : null}
+              </Fragment>
               );
             })}
           </ol>

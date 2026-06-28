@@ -17,8 +17,8 @@ export type { SprayChartProps } from './SprayChart';
 export { default as ZoneCoverage } from './ZoneCoverage';
 export type { ZoneCoverageProps } from './ZoneCoverage';
 
-export { default as TrajectoryLines } from './TrajectoryLines';
-export type { TrajectoryLinesProps } from './TrajectoryLines';
+export { default as TrajectoryLines, trajectoryLegend } from './TrajectoryLines';
+export type { TrajectoryLinesProps, LegendEntry as TrajectoryLegendEntry } from './TrajectoryLines';
 
 // Shared geometry helpers, exported for components that compose these
 // primitives (e.g. report/freemium layers) and need the same projection.

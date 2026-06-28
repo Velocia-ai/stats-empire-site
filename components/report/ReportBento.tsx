@@ -75,23 +75,26 @@ const SPATIAL_META: Record<SportData['spatialKind'], SpatialMeta> = {
   },
 };
 
-/** Render the right hero spatial overlay for a sport's spatialKind. */
+/**
+ * Render the right hero spatial overlay for a sport's spatialKind. This covers
+ * the STACKED overlays only (shot / heatmap / spray): each returns a layer that
+ * the caller drops over a shared PitchBackground via `absolute inset-0`. The
+ * `passmap` kind is intentionally NOT handled here, it owns its own field box +
+ * below-field legend (see the hero tile's passmap branch) so the interactive
+ * PLAYS legend never sits on top of the pitch.
+ */
 function HeroSpatial({
   data,
   pitch,
-  animate,
 }: {
   data: SportData;
   pitch: PitchType;
-  animate: boolean;
 }) {
   switch (data.spatialKind) {
     case 'shot':
       return <SprayChart points={data.spray} pitch={pitch} mode="shot" className="absolute inset-0" />;
     case 'heatmap':
       return <Heatmap cells={data.heatmap} pitch={pitch} className="absolute inset-0" />;
-    case 'passmap':
-      return <TrajectoryLines paths={data.trajectories} pitch={pitch} animate={animate} className="absolute inset-0" />;
     case 'spray':
     default:
       return <SprayChart points={data.spray} pitch={pitch} mode="spray" className="absolute inset-0" />;
@@ -349,15 +352,41 @@ export default function ReportBento({
                   below instead of one dead void under the court, so the tile
                   reads as an intentional, premium composition top-to-bottom. */}
               <div className="flex min-h-0 flex-1 flex-col justify-center">
-                <SpatialStack
-                  pitch={pitch}
-                  minHeight={340}
-                  // Portrait courts (tennis) get a wider cap in the tall hero so
-                  // the court uses more of the height; wide pitches already fill.
-                  maxWidth={pitch === 'tennis-court' ? '24rem' : undefined}
-                >
-                  <HeroSpatial data={data} pitch={pitch} animate={!prefersReduced} />
-                </SpatialStack>
+                {data.spatialKind === 'passmap' ? (
+                  /* PASSMAP hero (soccer "Pass network & xG", and any sport mapped
+                     to passmap). TrajectoryLines owns BOTH the field and the
+                     interactive PLAYS legend here via its opt-in `legendBelow`
+                     mode: it renders the PitchBackground + drawn paths in a field
+                     box, then the legend as a real-HTML sibling STRICTLY BELOW the
+                     field. Because the legend is a normal-flow sibling AFTER the
+                     relative field box, the field box's bottom is always <= the
+                     legend's top, so the legend can never overlap the pitch (the
+                     old default-mode docked-in-SVG legend covered the lower
+                     third). A portrait-pitch width cap keeps the tall field from
+                     eating the whole 2-row tile while the freed space below
+                     carries the now-larger, fully-legible legend. */
+                  <div
+                    className="mx-auto w-full"
+                    style={{ maxWidth: pitch === 'tennis-court' ? '17rem' : '24rem' }}
+                  >
+                    <TrajectoryLines
+                      paths={data.trajectories}
+                      pitch={pitch}
+                      animate={!prefersReduced}
+                      legendBelow
+                    />
+                  </div>
+                ) : (
+                  <SpatialStack
+                    pitch={pitch}
+                    minHeight={340}
+                    // Portrait courts (tennis) get a wider cap in the tall hero so
+                    // the court uses more of the height; wide pitches already fill.
+                    maxWidth={pitch === 'tennis-court' ? '24rem' : undefined}
+                  >
+                    <HeroSpatial data={data} pitch={pitch} />
+                  </SpatialStack>
+                )}
                 <p className="mt-3 font-body text-xs leading-relaxed text-muted sm:text-sm lg:text-[0.9375rem]">
                   {spatial.caption}
                 </p>
@@ -366,7 +395,8 @@ export default function ReportBento({
                     that double as the colour legend) + a one-line read, filling
                     what was an empty void and making the tall hero tile read full
                     and premium. Heatmap / passmap heroes have their own self-
-                    contained legends, so they keep just the caption. */}
+                    contained legends (passmap's is the below-field PLAYS legend),
+                    so they keep just the caption. */}
                 {(data.spatialKind === 'spray' || data.spatialKind === 'shot') && (
                   <OutcomeBreakdown
                     points={data.spray}

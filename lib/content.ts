@@ -165,6 +165,14 @@ export interface Provenance {
     primary: string;
     secondary: string;
   };
+  /**
+   * Optional "human + AI fusion" callout, rendered between the human-log and
+   * AI-sharpen steps to make the parallel pairing explicit. Optional.
+   */
+  callout?: {
+    calloutTitle: string;
+    calloutBody: string;
+  };
 }
 
 // Feature B, forward-looking opponent scouting add-on.
@@ -218,6 +226,11 @@ export const PROOF_STATS: ProofStat[] = [
     value: '12-24h',
     label: 'Coach-ready delivery on any match, with express slots when you need it sooner.',
     icon: 'turnaround',
+  },
+  {
+    kicker: 'AI assist',
+    value: '2nd pass',
+    label: 'Specialized AI tools double-check every human log before a senior signs off.',
     accent: true,
   },
   {
@@ -332,6 +345,11 @@ export const PROVENANCE: Provenance = {
   badge: {
     primary: 'Human-verified',
     secondary: 'Senior-audited',
+  },
+  callout: {
+    calloutTitle: 'Human judgment at machine speed',
+    calloutBody:
+      'People do the logging and hold the final say on what the match means. In parallel, specialized AI tools sharpen quality control, catching what a long shift can miss. You get human judgment, moving at machine speed.',
   },
 };
 

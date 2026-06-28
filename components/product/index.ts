@@ -9,3 +9,6 @@ export type { ProductHeroProps } from './ProductHero';
 
 export { default as FreeSampleCta } from './FreeSampleCta';
 export type { FreeSampleCtaProps } from './FreeSampleCta';
+
+export { default as TeamStatsExplorer } from './TeamStatsExplorer';
+export type { TeamStatsExplorerProps } from './TeamStatsExplorer';

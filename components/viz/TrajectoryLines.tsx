@@ -76,6 +76,18 @@ export interface TrajectoryLinesProps {
    * legend is always below the field and always expanded).
    */
   legendBelow?: boolean;
+  /**
+   * Suppress the in-SVG overlay legend entirely (default bare-<svg> mode only).
+   * Use this when the consumer renders its OWN legend outside the field, or when
+   * the viz is decorative and should show no legend over the pitch at all, so the
+   * trajectories + arrows are never covered. The plays still render exactly as in
+   * default mode (the whole-play toggle / draw-on are unaffected), only the
+   * docked foreignObject legend panel is skipped. Ignored in `legendBelow` mode
+   * (which already renders the legend below the field, never over it). Default
+   * false (back-compat: the overlay legend renders for existing consumers like
+   * FreeTrialDashboard that intentionally dock it inside the field).
+   */
+  hideLegend?: boolean;
   /** Optional extra classes for the <svg> (default mode) or wrapper (legendBelow). */
   className?: string;
 }
@@ -131,7 +143,12 @@ function fallbackKind(outcome: Outcome | undefined): string {
 // A legend row: one distinct `kind` present in the data, with its assigned
 // categorical colour. `key` is stable per kind (slug + index) for React keys and
 // marker ids; `kind` is the toggle identity used by the selection set.
-interface LegendEntry {
+//
+// Exported so a consumer that renders its OWN legend outside the field (e.g. the
+// Hero tactics board, which sets `hideLegend` and shows a compact swatch strip
+// below the pitch) can reuse the SAME kind→colour mapping the lines use, so the
+// off-field swatches match the on-pitch colours exactly.
+export interface LegendEntry {
   key: string;
   /** The exact kind string, used both as the displayed label and toggle id. */
   kind: string;
@@ -145,6 +162,9 @@ interface LegendEntry {
 // falls back to an outcome-bucket word so it still groups + colours sensibly.
 // Colour is keyed off the kind's first-seen position, so it is deterministic and
 // stable for a given data set (re-render safe, SSR safe).
+//
+// Exported as `trajectoryLegend` (below) so external consumers derive the exact
+// same swatches the on-pitch lines use.
 function buildLegend(paths: TrajectoryPath[]): LegendEntry[] {
   const order: string[] = [];
   const counts = new Map<string, number>();
@@ -161,6 +181,17 @@ function buildLegend(paths: TrajectoryPath[]): LegendEntry[] {
   }));
 }
 
+/**
+ * Public: derive the legend entries (distinct `kind` → stable categorical
+ * colour, in first-seen order) for a set of trajectory paths, using the EXACT
+ * same mapping the drawn lines use. A consumer that suppresses the in-SVG legend
+ * with `hideLegend` and renders its own off-field legend (e.g. the Hero tactics
+ * board) calls this so its swatches match the on-pitch line colours precisely.
+ */
+export function trajectoryLegend(paths: TrajectoryPath[]): LegendEntry[] {
+  return buildLegend(paths);
+}
+
 export default function TrajectoryLines({
   paths,
   pitch,
@@ -168,6 +199,7 @@ export default function TrajectoryLines({
   legendPlacement = 'top-left',
   legendCollapsible = false,
   legendBelow = false,
+  hideLegend = false,
   className,
 }: TrajectoryLinesProps) {
   const proj = useMemo(() => makeProjector(pitch), [pitch]);
@@ -564,8 +596,10 @@ export default function TrajectoryLines({
 
           SUPPRESSED in legendBelow mode: there the legend is rendered as a real-
           HTML sibling strictly below the field (see the wrapper return), so it
-          must NOT also appear docked inside the field svg. */}
-      {!legendBelow && legend.length > 0 && (
+          must NOT also appear docked inside the field svg. Also SUPPRESSED when
+          `hideLegend` is set, so a decorative / externally-legended consumer
+          (the Hero tactics board) shows no legend over the pitch at all. */}
+      {!legendBelow && !hideLegend && legend.length > 0 && (
         <foreignObject
           x={foPad}
           y={foPad}
